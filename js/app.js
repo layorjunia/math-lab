@@ -1015,9 +1015,116 @@ const App = {
     }
   },
 
+  // One account across every homeschool app. A name and four pictures, because
+  // the child using this cannot type a password. THE PICTURE SET MUST MATCH
+  // WONDER LAB'S CHARACTER FOR CHARACTER — the password is literally the four
+  // emoji joined plus a salt, so a different set means the same child tapping
+  // "the same four pictures" gets a different Firebase user, with no error
+  // anywhere to show for it.
+  CLOUD_EMOJI: ['🦖', '🐙', '🦋', '🐝', '🦉', '🐢', '🦈', '🐸',
+                '🌋', '⭐', '🌈', '🍄', '🔬', '🧪', '🦴', '🪐'],
+  _pin: [],
+
   signInPrompt() {
-    alert('Sign-in lands with the next build — the family summary path needs the '
-        + 'Firestore rule in SYNC.md deployed first.');
+    this.resetSay();
+    if (!window.Sync || !Sync.configured()) {
+      return this.el(`${this.bar('Sign in')}
+        <div class="card"><p class="dim">Cloud sync is not set up for this copy.
+        Everything is still saved on this device.</p>
+        <button class="btn ghost wide" style="margin-top:12px"
+          onclick="App.go('parent')">Back</button></div>`);
+    }
+    if (Sync.uid) {
+      return this.el(`${this.bar('Sign in')}
+        <div class="card" style="text-align:center;padding:28px 18px">
+          <div style="font-size:2.6rem">☁️</div>
+          <h2 style="margin-top:8px">Signed in</h2>
+          <p class="dim" style="margin-top:8px">Progress is backed up, and the
+            same name and pictures work in Wonder Lab and the reading app.</p>
+          <button class="btn ghost wide" style="margin-top:16px"
+            onclick="App.signOut()">Sign out</button>
+          <button class="btn ghost wide" style="margin-top:10px"
+            onclick="App.go('parent')">Back</button>
+        </div>`);
+    }
+    this._pin = [];
+    this.el(`${this.bar('Sign in')}
+      <div class="card">
+        <h2>What is your name?</h2>
+        <input id="cn" maxlength="18" placeholder="Your name" value="${
+          this.esc(Progress.profile ? Progress.profile.name : '')}"
+          style="width:100%;margin-top:12px;padding:14px;border-radius:12px;
+                 background:var(--ink-3);border:1px solid var(--line);
+                 color:var(--text);font:inherit;font-size:1.05rem">
+        <h2 style="margin-top:18px">Tap four pictures</h2>
+        <p class="dim small" style="margin-top:4px">
+          The same four, in the same order, every time — and the same ones you
+          use in the other apps.</p>
+        <div id="pin" class="pin-row"></div>
+        <div class="emoji-grid">
+          ${this.CLOUD_EMOJI.map(e => `<button class="emoji-btn"
+            onclick="App.pinTap('${e}')">${e}</button>`).join('')}
+        </div>
+        <div id="cloud-msg" class="dim small" style="margin-top:12px;min-height:1.3em"></div>
+        <button class="btn wide big" style="margin-top:6px" onclick="App.doSignIn()">Sign in</button>
+        <button class="btn ghost wide" style="margin-top:10px"
+          onclick="App.go('parent')">Not now</button>
+      </div>`);
+    this.drawPin();
+  },
+
+  drawPin() {
+    const el = document.getElementById('pin');
+    if (!el) return;
+    el.innerHTML = [0, 1, 2, 3].map(i =>
+      `<span class="pin-slot ${this._pin[i] ? 'filled' : ''}">${this._pin[i] || ''}</span>`).join('');
+  },
+
+  pinTap(e) {
+    if (this._pin.length >= 4) this._pin = [];
+    this._pin.push(e);
+    this.drawPin();
+    Sfx.play('tap', 0.25);
+  },
+
+  async doSignIn() {
+    const msg = document.getElementById('cloud-msg');
+    const name = (document.getElementById('cn').value || '').trim();
+    if (!name) { msg.textContent = 'Type your name first.'; return; }
+    if (this._pin.length !== 4) { msg.textContent = 'Tap four pictures.'; return; }
+    msg.textContent = 'Signing in…';
+    try {
+      await Sync.signIn(name, this._pin);
+      // Pull only if the cloud copy is newer: a child who played on the tablet
+      // this morning must not lose it by opening the laptop this afternoon.
+      const cloud = await Sync.pull();
+      if (cloud && cloud.progress && Progress.profile) {
+        const mine = Progress.profile.updatedAt || 0;
+        const theirs = cloud.updatedAt && cloud.updatedAt.toMillis
+          ? cloud.updatedAt.toMillis() : 0;
+        if (theirs > mine) {
+          Progress.profile.p = cloud.progress;
+          Progress.profile.name = cloud.name || Progress.profile.name;
+        }
+      }
+      Progress.commit();
+      Sync.watch(d => {
+        if (d && d.progress && Progress.profile) {
+          Progress.profile.p = d.progress;
+          Store.save(Progress.data);
+          if (this.tab === 'parent') this.parent();
+        }
+      });
+      Sfx.play('unlock', 0.4);
+      this.go('parent');
+    } catch (e) {
+      msg.textContent = e.message || 'Could not sign in.';
+    }
+  },
+
+  async signOut() {
+    await Sync.signOut();
+    this.go('parent');
   },
 };
 

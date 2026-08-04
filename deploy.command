@@ -18,8 +18,22 @@ $PY tools/check_generators.py --draws 4000
 echo
 if [ -f audio/manifest.json ]; then
   echo "── audio gates ──"
+  # A norm() divergence and a missing clip are both silent at runtime: the
+  # lookup misses, resolve() drops to the browser voice, nothing is logged, and
+  # on iOS the line is simply silent. These two take seconds and are the only
+  # things that catch either.
   $PY tools/check_norm.py
   $PY tools/audit_resolve.py
+  # Anything still in the suspect report is a clip that does not say what it
+  # should. In a maths app that is a wrong number in a confident voice.
+  $PY - <<'EOF'
+import json, os, sys
+p = 'tools/audio-suspect-report.json'
+n = len(json.load(open(p))) if os.path.exists(p) else 0
+if n:
+    print(f'{n} clip(s) in {p} do not transcribe back correctly — listen to them')
+    sys.exit(1)
+EOF
   echo
 fi
 echo "── stamp ──"
