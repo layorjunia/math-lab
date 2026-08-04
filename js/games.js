@@ -122,41 +122,63 @@ const Games = {
       blurb: 'Hear a number. Tap it.' },
   ],
 
-  // Skills the child can actually be asked about right now: at or below their
-  // grade, with a generator, and not locked behind something untouched.
-  pool(fmts) {
+  // Skills the child can be asked about right now: at or below their grade,
+  // with a generator, unlocked.
+  //
+  // With the fallback, because a brand-new profile has nothing unlocked beyond
+  // the root skills and the games came up empty on day one — the child taps
+  // Play, gets a blank screen, and never taps it again. Games are practice, not
+  // assessment, so a slightly-too-hard question here costs nothing.
+  pool(fmts, match) {
     const g = Progress.p.grade;
-    return SKILLS.filter(s => s.g <= g && GEN[s.id] && Progress.unlocked(s.id))
-      .filter(s => {
-        if (!fmts) return true;
-        try { return fmts.includes(GEN[s.id](mulberry32(7)).fmt); }
-        catch (e) { return false; }
-      });
+    const ok = s => {
+      if (!GEN[s.id]) return false;
+      if (!fmts && !match) return true;
+      try {
+        const p = GEN[s.id](mulberry32(7));
+        if (fmts && !fmts.includes(p.fmt)) return false;
+        return !match || match(p);
+      } catch (e) { return false; }
+    };
+    const inGrade = SKILLS.filter(s => s.g <= g && ok(s));
+    const unlocked = inGrade.filter(s => Progress.unlocked(s.id));
+    return unlocked.length >= 3 ? unlocked : inGrade;
   },
 
   draw(skillId, seed) {
     try { return GEN[skillId](mulberry32(seed >>> 0)); } catch (e) { return null; }
   },
 
+  // A bare two-operand sum with the blank at the end. Anything else — a
+  // sequence, a missing-addend, a worded question — is a different kind of
+  // question and does not belong in a comparison.
+  EXPR: /^-?[\d,]+(?:\.\d+)?\s*[+−\-×÷*/]\s*-?[\d,]+(?:\.\d+)?\s*=\s*▢$/,
+
   // ── Bigger or Smaller ──
   bigger(seed) {
-    const pool = this.pool(['number']);
-    if (pool.length < 1) return null;
+    const pool = this.pool(['number'], p => Games.EXPR.test(p.q.trim()));
+    if (pool.length < 2) return null;
     const r = mulberry32(seed >>> 0);
-    for (let attempt = 0; attempt < 40; attempt++) {
+    let best = null;
+    for (let attempt = 0; attempt < 60; attempt++) {
       const a = this.draw(G.pick(r, pool).id, seed + attempt * 31);
       const b = this.draw(G.pick(r, pool).id, seed + attempt * 71 + 13);
       if (!a || !b) continue;
       if (typeof a.a !== 'number' || typeof b.a !== 'number') continue;
       if (a.a === b.a) continue;
-      // Both sides must be bare expressions, or the "game" is two word problems
-      // side by side and the estimation idea is lost.
-      if (a.q.length > 26 || b.q.length > 26) continue;
+      if (!Games.EXPR.test(a.q.trim()) || !Games.EXPR.test(b.q.trim())) continue;
       const strip = q => q.replace(/\s*=\s*▢\s*$/, '');
-      return { left: strip(a.q), right: strip(b.q), lv: a.a, rv: b.a,
-               answer: a.a > b.a ? 'left' : 'right' };
+      const pair = { left: strip(a.q), right: strip(b.q), lv: a.a, rv: b.a,
+                     answer: a.a > b.a ? 'left' : 'right' };
+      // Keep the CLOSEST pair found, not the first valid one. "135 versus 2"
+      // needs no thought and drills nothing; the game is only an estimation
+      // exercise when both sides are in the same neighbourhood.
+      const ratio = Math.max(Math.abs(a.a), Math.abs(b.a), 1)
+                  / Math.max(Math.min(Math.abs(a.a), Math.abs(b.a)), 1);
+      if (ratio <= 2.5) return pair;
+      if (!best || ratio < best.ratio) best = { pair, ratio };
     }
-    return null;
+    return best ? best.pair : null;
   },
 
   // Which mistakes actually occur in a given strand. Built by sampling the
