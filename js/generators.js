@@ -110,10 +110,6 @@ const G = {
     const h = Math.floor(min / 60) % 12 || 12;
     return h + ':' + String(min % 60).padStart(2, '0');
   },
-  ord(n) {
-    const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-  },
   // Distinct, plausible, and never accidentally equal to the right answer.
   //
   // "Never equal" has to mean equal in VALUE, not just equal as a JSON blob.

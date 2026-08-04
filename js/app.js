@@ -578,7 +578,6 @@ const App = {
   },
 
   practise(id) {
-    this._practice = id;
     this.tab = 'today';
     this.serve(id, (Date.now() % 100000) >>> 0);
     this.renderNav();
@@ -625,7 +624,6 @@ const App = {
 
   gameDone(extra) {
     const g = this.game;
-    const secs = Math.round((Date.now() - g.t0) / 1000);
     this.el(`
       ${this.bar('Play')}
       <div class="card" style="text-align:center;padding:28px 18px">
