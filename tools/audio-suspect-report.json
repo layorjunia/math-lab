@@ -1,1 +1,27 @@
-[]
+[
+ {
+  "key": "pint",
+  "spoken": "pint",
+  "heard": "point."
+ },
+ {
+  "key": "quart",
+  "spoken": "quart",
+  "heard": "Support  8  8  8  7  8  8  8  8  9  8  8  8  8  8  8  8  8  8  8  8  9  8  8  8  8  8"
+ },
+ {
+  "key": "quarts",
+  "spoken": "quarts",
+  "heard": "reports."
+ },
+ {
+  "key": "cent",
+  "spoken": "cent",
+  "heard": "Sent."
+ },
+ {
+  "key": "cents",
+  "spoken": "cents",
+  "heard": "Since."
+ }
+]

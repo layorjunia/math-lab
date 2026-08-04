@@ -437,6 +437,8 @@ def main():
                     help='re-roll budget per short clip; RATES has 6 entries')
     ap.add_argument('--recheck', action='store_true',
                     help='re-verify only the clips in the last suspect report')
+    ap.add_argument('--only', default='',
+                    help='comma-separated strings to re-verify and rescue')
     args = ap.parse_args()
 
     try:
@@ -445,6 +447,28 @@ def main():
         print(e)
         return 2
 
+    lock = os.path.join(_WORK, 'gen_audio.lock')
+    if os.path.exists(lock):
+        try:
+            pid = int(open(lock).read().strip())
+            os.kill(pid, 0)
+            print(f'another gen_audio.py is running (pid {pid}).\n'
+                  'Two runs share audio/ and the older one\'s orphan prune will '
+                  'delete clips the newer one just rendered. Wait for it, or '
+                  f'remove {os.path.relpath(lock, ROOT)} if it is stale.')
+            return 2
+        except (ValueError, ProcessLookupError, PermissionError):
+            pass            # stale lock from a killed run
+    with open(lock, 'w') as f:
+        f.write(str(os.getpid()))
+    try:
+        return _run(args, engine)
+    finally:
+        if os.path.exists(lock):
+            os.unlink(lock)
+
+
+def _run(args, engine):
     if args.clean and os.path.isdir(AUDIO):
         # Narrowed to the directory this tool owns. A blanket rmtree of audio/
         # takes audio/sfx/ with it, and Sfx.play() swallows the resulting 404 —
@@ -496,7 +520,10 @@ def main():
     if args.recheck:
         old = os.path.join(ROOT, 'tools', 'audio-suspect-report.json')
         prior = json.load(open(old)) if os.path.exists(old) else []
-        keys = [x['key'] for x in prior if x['key'] in manifest['words']]
+        if args.only:
+            keys = [norm(w) for w in args.only.split(',') if norm(w) in manifest['words']]
+        else:
+            keys = [x['key'] for x in prior if x['key'] in manifest['words']]
         print(f're-checking {len(keys)} previously suspect clip(s)')
         if keys:
             listener = Listener()
@@ -575,8 +602,11 @@ def main():
         print('  ' + p)
 
     report = os.path.join(ROOT, 'tools', 'audio-suspect-report.json')
-    with open(report, 'w', encoding='utf-8') as f:
-        json.dump(suspect, f, indent=1, ensure_ascii=False)
+    if args.no_verify:
+        print(f'(--no-verify: leaving {os.path.relpath(report, ROOT)} alone)')
+    else:
+        with open(report, 'w', encoding='utf-8') as f:
+            json.dump(suspect, f, indent=1, ensure_ascii=False)
     for s in suspect[:25]:
         print(f'  SUSPECT {s["spoken"]!r} heard as {s["heard"]!r}')
 
