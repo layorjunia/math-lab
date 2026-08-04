@@ -191,6 +191,88 @@ const NumSpeak = {
     return out;
   },
 
+
+  // ── reading a whole QUESTION aloud ───────────────────────────────────────
+  //
+  // A question like "In 22, how many ones are there?" is prose with a number in
+  // it. It cannot have its own clip — there are 90 of them for that one skill
+  // alone — and it must NOT be read word by word, which is what happened when
+  // expr() was handed prose.
+  //
+  // So it is split into whole PROSE FRAGMENTS and numbers:
+  //
+  //   "In 22, how many ones are there?"
+  //     -> ["in", <22>, "how many ones are there"]
+  //
+  // Each fragment is a complete phrase with its own recording and its own
+  // natural intonation; the number is composed from the number vocabulary. Two
+  // or three parts with a real pause where the number sits, which is how a
+  // person reads that sentence out loud anyway. It is not stitching prose from
+  // word clips — no fragment is ever smaller than a phrase.
+  //
+  // The fragments are FIXED for a given skill (only the numbers vary), so
+  // tools/gen_audio.py can enumerate and render every one of them.
+
+  // Everything that is not prose: numbers in all their written forms, plus the
+  // operators and the answer blank.
+  Q_TOKEN: /(-?\d+)\s+(\d+)\/(\d+)|(-?\d+)\/(\d+)|\$(\d+)\.(\d{2})|(-?\d[\d,]*)\.(\d+)|(-?\d[\d,]*)\s*%|(-?\d[\d,]*)|(?:(?<=[\s\d])|^)([+\-−×÷=><≥≤▢])(?=[\s\d]|$)|(\d*[⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g,
+
+  SUPER: { '⁰': 0, '¹': 1, '²': 2, '³': 3, '⁴': 4, '⁵': 5, '⁶': 6, '⁷': 7, '⁸': 8, '⁹': 9 },
+
+  // A prose fragment, cleaned up for use as a manifest key. Returns '' for
+  // anything that is only punctuation.
+  _frag(t) {
+    const s = String(t).replace(/[,;:.?!]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return /[a-z]/i.test(s) ? s : '';
+  },
+
+  // [{say}|{num}] — the pieces of a question, in order.
+  questionParts(text) {
+    const out = [];
+    let last = 0, m;
+    const re = new RegExp(this.Q_TOKEN.source, 'g');
+    while ((m = re.exec(text)) !== null) {
+      const before = this._frag(text.slice(last, m.index));
+      if (before) out.push({ say: before });
+      if (m[1] !== undefined) out.push({ num: this.mixed(+m[1], +m[2], +m[3]) });
+      else if (m[4] !== undefined) out.push({ num: this.fraction(+m[4], +m[5]) });
+      else if (m[6] !== undefined) out.push({ num: this.money(+m[6] * 100 + +m[7]) });
+      else if (m[8] !== undefined) out.push({ num: this.decimal(
+        Number(m[8].replace(/,/g, '') + m[9]), m[9].length) });
+      else if (m[10] !== undefined) out.push({ num: this.number(+m[10].replace(/,/g, '')).concat(['percent']) });
+      else if (m[11] !== undefined) out.push({ num: this.number(+m[11].replace(/,/g, '')) });
+      else if (m[12] !== undefined) { const w = this.OPS[m[12]]; if (w) out.push({ num: [w] }); }
+      else if (m[13] !== undefined) {
+        const digits = [...m[13]].map(c => this.SUPER[c]).filter(d => d !== undefined);
+        out.push({ num: ['to the power'].concat(this.number(+digits.join(''))) });
+      }
+      last = m.index + m[0].length;
+    }
+    const tail = this._frag(text.slice(last));
+    if (tail) out.push({ say: tail });
+    // No numbers at all: this is an ordinary sentence and it has its own clip,
+    // keyed by the text AS DISPLAYED. Returning a punctuation-stripped fragment
+    // instead would mint a second key for the same sentence — 38 of them, each
+    // one a Listen button pointing at a recording that was never made.
+    if (!out.some(p => p.num)) return [{ say: String(text).trim() }];
+    return out;
+  },
+
+  // The manifest keys for a whole question, flattened.
+  sayQuestion(text) {
+    const parts = [];
+    this.questionParts(text).forEach(p => {
+      if (p.say) parts.push(p.say);
+      else parts.push(...p.num);
+    });
+    return parts;
+  },
+
+  // Just the prose fragments — what gen_audio.py has to render.
+  questionFragments(text) {
+    return this.questionParts(text).filter(p => p.say).map(p => p.say);
+  },
+
   // Every distinct clip the number vocabulary needs. tools/gen_audio.py renders
   // exactly this list, so the app can never ask for a key that was not built.
   vocabulary() {
@@ -218,6 +300,7 @@ const NumSpeak = {
      ['square inch', 'square inches'], ['square foot', 'square feet'],
      ['cubic inch', 'cubic inches'],
     ].forEach(([a, b]) => { v.add(a); v.add(b); });
+    v.add('to the power');
     return [...v].sort();
   },
 };

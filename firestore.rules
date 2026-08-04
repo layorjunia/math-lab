@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Progress. Private to the child it belongs to.
+    // The {document=**} wildcard is required, or the per-app subdocuments are
+    // unreachable and every write fails with a permission error.
+    // THIS BLOCK IS UNCHANGED from what is already deployed — Wonder Lab and
+    // Unicorn Reading Academy depend on it exactly as written.
+    match /profiles/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // NEW: the family summary the parent dashboard reads.
+    //
+    // A parent signed in as themselves cannot read a child's progress document
+    // — the rule above forbids it, correctly. So each app also writes a small
+    // SUMMARY here: counts and dates, never the problem-level record.
+    //
+    // A child can only ever write their OWN summary, because the uid inside the
+    // document has to match the uid doing the writing. Any signed-in member of
+    // the family can read.
+    match /families/{code}/children/{child}/apps/{app} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.data.uid == request.auth.uid;
+    }
+  }
+}

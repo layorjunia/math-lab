@@ -78,7 +78,7 @@ SKILLS.filter(s => GEN[s.id]).forEach(s => {
   for (let k = 0; k < 300; k++) {
     const p = GEN[s.id](mulberry32(k * 11 + 5));
     if (p.hint) hints.add(p.hint);
-    NumSpeak.expr(p.q).forEach(part => {
+    (AudioLib.has(p.q) ? [p.q] : NumSpeak.sayQuestion(p.q)).forEach(part => {
       if (!AudioLib.fileFor(part)) {
         const key = part + '  <-  ' + s.id;
         missing.set(key, (missing.get(key) || 0) + 1);

@@ -112,6 +112,19 @@ const App = {
   // PROSE IS NOT COMPOSED. NumSpeak.expr returns [] for anything that is not a
   // bare expression, so this returns no button rather than reading a sentence
   // one word at a time.
+  // Read a question aloud: whole prose fragments interleaved with composed
+  // numbers. Returns nothing if any fragment is missing a clip, so a hole in
+  // the corpus is silence rather than one phrase in a stranger's voice.
+  listenQuestion(text) {
+    const parts = NumSpeak.sayQuestion(text);
+    if (!parts.length) return '';
+    if (AudioLib.manifest && !AudioLib.hasAll(parts)) return this.listenExpr(text);
+    const i = this._sayReg.push({ parts, gap: 150 }) - 1;
+    return `<button class="listen" data-say="${i}" aria-label="Listen"
+      onclick="event.stopPropagation();App.say(${i})">
+      <span class="ic">▶</span><span class="lbl">Listen</span></button>`;
+  },
+
   listenExpr(text) {
     const parts = NumSpeak.expr(text);
     if (!parts.length) return '';
@@ -132,7 +145,7 @@ const App = {
     this.syncListen();
     const done = Array.isArray(item)
       ? AudioLib.speakSeq(item)
-      : AudioLib.speakParts(item.parts);
+      : AudioLib.speakParts(item.parts, item.gap);
     done.then(() => {
       if (this._saying === i) { this._saying = null; this.syncListen(); }
     });
@@ -235,8 +248,11 @@ const App = {
 
     // Teach before testing. A skill the child has never met gets its lesson
     // first — this app was a quiz with good error messages until it did.
-    if (!this.wasTaught(skillId) && Progress.state(skillId) === 'unseen'
-        && lessonFor(skillId) && !this._skipLesson) {
+    // Gate on "has this child been TAUGHT it", not on "have they seen it".
+    // A profile that existed before lessons did has every skill already marked
+    // seen, so the state test meant those children never got a lesson at all —
+    // which is exactly how the teaching can be built, shipped, and invisible.
+    if (!this.wasTaught(skillId) && lessonFor(skillId) && !this._skipLesson) {
       this.cur = { p: prob, skill: s, seed };
       return this.lesson(skillId, true);
     }
@@ -257,11 +273,12 @@ const App = {
     this.resetSay();
     // Word problems have their own recording; bare expressions are composed
     // from the number vocabulary.
-    // A whole-string clip if there is one; otherwise compose, but only if this
-    // really is an expression. Prose with no clip gets NO button — the teaching
-    // text below always has one, and a silent button is better than a robot.
+    // A whole-string clip if there is one; otherwise read the question as
+    // PROSE FRAGMENTS plus numbers — "In" + <22> + "how many ones are there".
+    // Each fragment is a complete phrase with its own recording, so this is not
+    // stitching prose from word clips.
     const listen = AudioLib.has(prob.q) ? this.listenBtn(prob.q)
-                                        : this.listenExpr(prob.q);
+                                        : this.listenQuestion(prob.q);
 
     const body = `
       ${this.session
@@ -593,6 +610,7 @@ const App = {
     const l = lessonFor(id), s = SKILL[id];
     if (!l) return thenPractice ? this.serve(id, (Date.now() % 100000) | 0) : this.go('map');
     this.resetSay();
+    this._turnShown = false;
     const back = thenPractice
       ? `<button class="btn wide big" style="margin-top:4px"
            onclick="App.startAfterLesson('${id}')">I'm ready — start practicing</button>`
@@ -600,28 +618,53 @@ const App = {
            onclick="App.practice('${id}', 'skill')">Practice this</button>
          <button class="btn ghost wide" style="margin-top:10px"
            onclick="App.backFromLesson('${id}')">Back</button>`;
+
+    // A worked step is a DO and a WHY. A step with no reason is something to
+    // copy, not something to learn — which is what the first version of these
+    // lessons offered.
+    const step = t => (typeof t === 'string')
+      ? `<li>${this.esc(t)}</li>`
+      : `<li>${this.esc(t.do)}${t.why
+          ? `<span class="why">${this.esc(t.why)}</span>` : ''}</li>`;
+    const flat = t => (typeof t === 'string') ? t : (t.do + ' ' + (t.why || ''));
+
     this.el(`
       ${this.bar('Learn', `<span class="chip">${this.esc(GRADES[s.g].short)}</span>`)}
       <div class="card" style="border-left:3px solid var(--${s.s})">
         <p class="small dim">${this.esc(STRANDS[s.s].name)}</p>
         <h2 style="margin-top:4px">${this.esc(s.name)}</h2>
-        <p style="margin-top:10px;font-size:1.05rem;line-height:1.5">${this.esc(l.idea)}</p>
-        <div style="margin-top:10px">${this.listenBtn(l.idea)}</div>
+        ${l.anchor ? `<p class="anchor">${this.esc(l.anchor)}</p>` : ''}
+        <p style="margin-top:10px;font-size:1.05rem;line-height:1.55">${this.esc(l.idea)}</p>
+        ${l.svg || ''}
+        <div style="margin-top:10px">${this.listenBtn(
+          ...(l.anchor ? [l.anchor] : []), l.idea)}</div>
       </div>
 
       <div class="card">
         <h3>How to do it</h3>
-        <ol class="steps">${l.steps.map(t => `<li>${this.esc(t)}</li>`).join('')}</ol>
-        <div style="margin-top:10px">${this.listenBtn(...l.steps)}</div>
+        <ol class="steps">${l.steps.map(step).join('')}</ol>
+        <div style="margin-top:10px">${this.listenBtn(...l.steps.map(flat))}</div>
       </div>
 
       <div class="card worked">
         <h3>Worked example</h3>
         <p class="wq">${this.esc(l.ex.q)}</p>
-        <ol class="steps">${l.ex.steps.map(t => `<li>${this.esc(t)}</li>`).join('')}</ol>
+        <ol class="steps">${l.ex.steps.map(step).join('')}</ol>
         <p class="wa">Answer: <b>${this.esc(l.ex.a)}</b></p>
-        <div style="margin-top:10px">${this.listenBtn(l.ex.q, ...l.ex.steps)}</div>
+        <div style="margin-top:10px">${this.listenBtn(
+          l.ex.q, ...l.ex.steps.map(flat), 'The answer is ' + l.ex.a)}</div>
       </div>
+
+      ${l.turn ? `<div class="card turn">
+        <h3>Now you try</h3>
+        <p class="wq">${this.esc(l.turn.q)}</p>
+        ${l.turn.ask ? `<p class="dim small" style="margin-top:6px">${this.esc(l.turn.ask)}</p>` : ''}
+        <button class="btn ghost wide" style="margin-top:12px"
+          onclick="App.revealTurn('${id}')" id="turnbtn">Show me</button>
+        <div id="turnans"></div>
+        <div style="margin-top:10px">${this.listenBtn(l.turn.q,
+          ...(l.turn.ask ? [l.turn.ask] : []))}</div>
+      </div>` : ''}
 
       <div class="card watch">
         <h3>Watch out</h3>
@@ -629,6 +672,22 @@ const App = {
         <div style="margin-top:10px">${this.listenBtn(l.watch)}</div>
       </div>
       ${back}`);
+  },
+
+  // The faded step. Going straight from a worked example to a blank problem is
+  // a cliff; this is the same thing with only the last move left to them.
+  revealTurn(id) {
+    const l = lessonFor(id);
+    const el = document.getElementById('turnans');
+    const btn = document.getElementById('turnbtn');
+    if (!l || !l.turn || !el || this._turnShown) return;
+    this._turnShown = true;
+    if (btn) btn.remove();
+    el.innerHTML = `<div class="verdict ok" style="margin-top:12px">
+      <h3>${this.esc(l.turn.a)}</h3>
+      ${l.turn.why ? `<p>${this.esc(l.turn.why)}</p>` : ''}
+    </div>`;
+    Sfx.play('star', 0.35);
   },
 
   startAfterLesson(id) {

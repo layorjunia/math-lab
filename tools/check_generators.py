@@ -55,10 +55,15 @@ load('js/schema.js');
 load('js/skills.js');
 load('js/generators.js');
 if (fs.existsSync('js/manipulatives.js')) load('js/manipulatives.js');
+if (fs.existsSync('js/lessons.js')) load('js/lessons.js');
 
 const draws = Number(process.argv[2]);
 const only  = process.argv[3] || '';
-const out = { errors: Object.keys(ERRORS), skills: {}, missing: [], rows: [],
+const thin = (typeof LESSONS === 'undefined') ? [] : Object.entries(LESSONS)
+  .filter(([, l]) => !l.anchor || !l.turn ||
+                     !(l.ex && l.ex.steps || []).some(x => typeof x !== 'string'))
+  .map(([id]) => id);
+const out = { errors: Object.keys(ERRORS), skills: {}, missing: [], rows: [], thin,
               tagStrands: Object.fromEntries(
                 Object.entries(ERRORS).map(([k, v]) => [k, v.strands || null])) };
 
@@ -459,6 +464,17 @@ def main():
     for sid in data['missing']:
         problems.append(f'{sid}: no generator (skills.js declares it, GEN does not have it)')
     problems.extend(check_handlers())
+
+    # Not a failure — a visible count, so the remaining rewrite cannot quietly
+    # stay unfinished. A lesson without a concrete anchor, without reasons on
+    # its worked steps, and without a faded 'now you try' is a procedure list.
+    thin = data.get('thin') or []
+    if thin:
+        print()
+        print(f'{len(thin)} lesson(s) still on the thin shape — no concrete '
+              'anchor, no reasons on the worked steps, no "now you try":')
+        print('   ' + ', '.join(thin[:10]) + (' ...' if len(thin) > 10 else ''))
+
 
     # Everything, at the end, after every generator has contributed — and
     # GROUPED. A flat list truncated at 60 lines shows one loud failure and

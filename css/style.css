@@ -384,3 +384,17 @@ table.rep td.num { text-align: right; font-variant-numeric: tabular-nums; }
   -webkit-box-orient: vertical;
 }
 .bar .chiptap, .bar .chip { flex: 0 0 auto; }
+
+/* A worked step carries its reason. The reason is what makes it teaching
+   rather than a list of moves to copy. */
+.steps li .why {
+  display: block; margin-top: 4px; color: var(--dim);
+  font-size: .9rem; line-height: 1.45;
+  border-left: 2px solid var(--line-2); padding-left: 9px;
+}
+.anchor {
+  margin-top: 10px; padding: 10px 12px; border-radius: 10px;
+  background: var(--ink-3); border: 1px solid var(--line);
+  line-height: 1.5; font-size: .96rem;
+}
+.card.turn { border-left: 3px solid var(--good); }

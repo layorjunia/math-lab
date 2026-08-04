@@ -125,8 +125,13 @@ SKILLS.filter(s => GEN[s.id]).forEach(s => {
   if (hints.size > 4) varying.push({ id: s.id, field: 'hint', n: hints.size });
   else hints.forEach(add);
   // A question whose text is the same every draw is a real string worth a clip.
-  // One that changes is an expression, and numspeak composes it at runtime.
-  if (qs.size <= 3) qs.forEach(add);
+  if (qs.size <= 3) { qs.forEach(add); return; }
+  // One that varies is prose with numbers in it. It cannot have its own clip,
+  // but its PROSE FRAGMENTS are fixed and finite — "In", "how many ones are
+  // there" — so render those and let numspeak fill the numbers at runtime.
+  const frags = new Set();
+  qs.forEach(q => NumSpeak.questionFragments(q).forEach(f => frags.add(f)));
+  frags.forEach(add);
 });
 
 console.log(JSON.stringify({

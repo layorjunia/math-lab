@@ -1,6 +1,6 @@
 // Offline cache for Math Lab.
 // CACHE is rewritten by tools/stamp_version.py on every deploy.
-const CACHE = 'mathlab-20260804-1437-dea5808';
+const CACHE = 'mathlab-20260804-1450-cabf004';
 const SHELL = [
   '.', 'index.html', 'css/style.css', 'manifest.json',
   'js/schema.js', 'js/skills.js', 'js/numspeak.js', 'js/generators.js',

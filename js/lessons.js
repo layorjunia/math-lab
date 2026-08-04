@@ -42,10 +42,24 @@ const LESSONS = {
   watch: 'Crossing a ten is where counting slips. After 99 comes 100, not 200.',
 },
 'npv.pv2': {
-  idea: 'A two-digit number is made of tens and ones. In 47 there are 4 tens and 7 ones, and that is why it means forty-seven.',
-  steps: ['The last digit is the ones.', 'The digit before it is the tens.'],
-  ex: { q: 'How many tens are in 47?', steps: ['The ones digit is the 7 on the end.', 'The digit in front of it, the 4, is the tens.'], a: '4' },
-  watch: 'The digit tells you how many tens, not what the number is. The 4 in 47 means four tens, which is forty.',
+  anchor: "Ten ones make a ten. When you get ten of something you bundle it up, and the bundle moves one place to the left.",
+  idea: "Where a digit sits is what decides its value. In 47 the 4 is not worth four — it is worth forty, because it sits in the tens place.",
+  steps: [
+    { do: "Name the places from the RIGHT: ones first, then tens.", why: "Always from the right. The ones place is the anchor; counting from the left gives a different answer for every length of number." },
+    { do: "Find the digit sitting in the place you were asked about." },
+    { do: "Its value is that digit times what the place is worth.", why: "The place tells you the size of the bundle. Four bundles of ten is forty." },
+  ],
+  ex: {
+    q: "In 47, how many tens are there, and what are they worth?",
+    steps: [
+      { do: "From the right: 7 is in the ones place, 4 is in the tens place.", why: "Two digits, so two places." },
+      { do: "The digit in the tens place is 4.", why: "The question asked which digit, not what it is worth." },
+      { do: "Four tens is 40.", why: "Each ten is a bundle of ten ones, so four of them is forty ones." },
+    ],
+    a: "4 tens, worth 40",
+  },
+  turn: { q: "In 83, the 8 is in the ▢ place and is worth ▢.", ask: "Name the places from the right first.", a: "tens place, worth 80", why: "8 sits second from the right, so it counts bundles of ten. Eight tens is eighty." },
+  watch: "A digit and what it is worth are two different things. The digit is 4; its value is 40.",
 },
 'npv.compare2': {
   idea: 'To compare two numbers, look at the biggest place first. Tens beat ones every time.',
@@ -60,10 +74,24 @@ const LESSONS = {
   watch: 'Check the jump between two pairs, not just one, so you know the rule really holds.',
 },
 'npv.pv3': {
-  idea: 'A three-digit number is hundreds, tens and ones. The place a digit sits in decides what it is worth.',
-  steps: ['Count the columns from the RIGHT: ones, tens, hundreds.', 'Read off the digit in the column you were asked for.'],
-  ex: { q: 'Which digit is in the tens place in 462?', steps: ['From the right: 2 is ones, 6 is tens, 4 is hundreds.'], a: '6' },
-  watch: 'Always count from the right. Counting from the left gives the wrong column on every number.',
+  anchor: "Ten ones make a ten, and ten tens make a hundred. Each new place is another bundling.",
+  idea: "Every place to the left is worth ten times the one before it. That is the whole rule, and it never changes however long the number gets.",
+  steps: [
+    { do: "Name the places from the right: ones, tens, hundreds.", why: "Each step left multiplies by ten." },
+    { do: "Find the digit in the place you were asked for." },
+    { do: "Multiply that digit by what the place is worth." },
+  ],
+  ex: {
+    q: "In 462, which digit is in the tens place, and what is it worth?",
+    steps: [
+      { do: "From the right: 2 is ones, 6 is tens, 4 is hundreds.", why: "Three digits, three places." },
+      { do: "The tens place holds the 6." },
+      { do: "Six tens is 60.", why: "So 462 is 400 and 60 and 2 put together." },
+    ],
+    a: "6, worth 60",
+  },
+  turn: { q: "In 508, what is the 5 worth?", ask: "Name the places from the right.", a: "500", why: "5 is third from the right, so it counts hundreds. The 0 in the tens place means there are no tens — it is holding the place open." },
+  watch: "A zero is not nothing. In 508 it means there are no tens, and it holds the hundreds and ones apart. Drop it and you have 58.",
 },
 'npv.compare3': {
   idea: 'Comparing bigger numbers works the same way: start at the biggest place and move right until the digits differ.',
@@ -90,16 +118,44 @@ const LESSONS = {
   watch: 'It is the tens digit that decides, not the ones. The 2 on the end never gets a vote.',
 },
 'npv.pv4': {
-  idea: 'Past nine hundred and ninety-nine comes a new column: thousands. The pattern of ones, tens, hundreds just keeps going.',
-  steps: ['Count the columns from the right: ones, tens, hundreds, thousands.', 'Read the digit in the column you want.'],
-  ex: { q: 'Which digit is in the hundreds place in 5,283?', steps: ['From the right: 3 ones, 8 tens, 2 hundreds, 5 thousands.'], a: '2' },
-  watch: 'The comma is only there to help you read it. It is not a decimal point and it changes nothing.',
+  anchor: "Ten hundreds make a thousand — the same bundling one step further.",
+  idea: "Where a digit sits decides its value. In 5,283 the 2 is not worth two, it is worth two hundred.",
+  steps: [
+    { do: "Name the places from the right: ones, tens, hundreds, thousands.", why: "Each place left is ten times the last." },
+    { do: "Find the digit in the place asked for." },
+    { do: "Multiply it by what that place is worth." },
+  ],
+  ex: {
+    q: "In 5,283, which digit is in the hundreds place, and what is it worth?",
+    steps: [
+      { do: "From the right: 3 ones, 8 tens, 2 hundreds, 5 thousands.", why: "Four digits, four places." },
+      { do: "The hundreds place holds the 2.", why: "That is the digit; its value is the next step." },
+      { do: "Two hundreds is 200.", why: "So 5,283 is 5,000 and 200 and 80 and 3." },
+    ],
+    a: "The digit is 2, and it is worth 200",
+  },
+  turn: { q: "In 4,617, the 6 is in the ▢ place, worth ▢.", ask: "Name the places from the right, then say what the 6 counts.", a: "hundreds place, worth 600", why: "6 sits third from the right, so it counts bundles of one hundred." },
+  watch: "The digit and its value are different. The digit is 2; what it is worth is 200. The comma only helps you read the number — it changes nothing.",
 },
 'npv.pv6': {
-  idea: 'The columns keep repeating in groups of three: ones, tens, hundreds — then thousands, ten thousands, hundred thousands.',
-  steps: ['Split the number at the comma.', 'Inside each group, read ones, tens, hundreds from the right.'],
-  ex: { q: 'Which digit is in the ten thousands place in 348,912?', steps: ['The group before the comma is 348 thousands.', 'Inside it: 8 thousands, 4 ten thousands, 3 hundred thousands.'], a: '4' },
-  watch: 'The comma splits thousands from the rest. Reading straight across without it is where big numbers go wrong.',
+  anchor: "The places repeat in groups of three, and the comma marks where each group ends: ones, tens, hundreds — then thousands, ten thousands, hundred thousands.",
+  idea: "Big numbers are not a new system. It is the same three places over again, counting thousands instead of ones.",
+  steps: [
+    { do: "Split the number at the comma.", why: "Everything left of it counts thousands." },
+    { do: "Inside each group, read ones, tens, hundreds from the right." },
+    { do: "Add the word 'thousand' to anything left of the comma." },
+  ],
+  ex: {
+    q: "In 348,912, which digit is in the ten thousands place?",
+    steps: [
+      { do: "Split at the comma: 348 thousands, and 912.", why: "So the left group counts thousands." },
+      { do: "Inside 348, from the right: 8 thousands, 4 ten thousands, 3 hundred thousands.", why: "The same ones-tens-hundreds pattern, one group up." },
+      { do: "The ten thousands place holds the 4." },
+    ],
+    a: "4",
+  },
+  turn: { q: "In 706,215, what is the 7 worth?", ask: "Split at the comma first.", a: "700,000", why: "7 is in the hundred thousands place: seven hundred thousands." },
+  watch: "Read the comma as the word 'thousand' and big numbers stop being frightening. 348,912 is 'three hundred forty-eight thousand, nine hundred twelve'.",
 },
 'npv.compare6': {
   idea: 'A number with more digits is always bigger. If they have the same number of digits, compare from the left.',
@@ -183,10 +239,25 @@ const LESSONS = {
   watch: 'Line up from the RIGHT. Ones under ones, tens under tens.',
 },
 'as.add2d.rg': {
-  idea: 'When a column makes ten or more, the ten does not disappear — it moves to the next column. That is regrouping.',
-  steps: ['Add the ones.', 'If they make 10 or more, write the ones digit and carry the ten.', 'Add the tens, including the one you carried.'],
-  ex: { q: 'What is 47 + 28?', steps: ['Ones: 7 + 8 = 15. Write the 5, carry the 1 ten.', 'Tens: 4 + 2 = 6, plus the carried 1 makes 7.'], a: '75' },
-  watch: 'The carried ten is easy to forget, and forgetting it makes the answer exactly ten too small.',
+  anchor: "Ten ones make a ten. If a column ever collects ten, you bundle it and the bundle moves one place left. That is all regrouping is.",
+  idea: "When a column adds to ten or more, the ten does not vanish — it moves to the next column. Forgetting it makes your answer exactly ten too small.",
+  steps: [
+    { do: "Line the numbers up from the RIGHT, ones under ones.", why: "Only digits worth the same thing can be added together." },
+    { do: "Add the ones. If they make ten or more, write the ones digit and carry the ten.", why: "Fifteen ones is one ten and five ones. The ten belongs in the tens column." },
+    { do: "Add the tens, including the one you carried." },
+  ],
+  ex: {
+    q: "What is 47 + 28?",
+    steps: [
+      { do: "Ones: 7 + 8 = 15.", why: "That is more than nine, so it will not fit in one column." },
+      { do: "Write the 5 in the ones, carry the 1 into the tens.", why: "15 is one ten and five ones. The five stays; the ten moves." },
+      { do: "Tens: 4 + 2 = 6, plus the carried 1 makes 7.", why: "Seven tens is seventy." },
+      { do: "So the answer is 70 and 5." },
+    ],
+    a: "75",
+  },
+  turn: { q: "What is 36 + 27?", ask: "Do the ones first. What do you carry?", a: "63", why: "6 + 7 = 13, so write 3 and carry 1. Then 3 + 2 + 1 = 6 tens." },
+  watch: "If you forget the carry you get 55 instead of 75 — exactly ten short. An answer that is ten out is almost always a missing carry.",
 },
 'as.sub2d.nr': {
   idea: 'Subtracting two-digit numbers is two small subtractions: the ones, then the tens.',
@@ -195,10 +266,25 @@ const LESSONS = {
   watch: 'Always take the bottom number from the top one, never the other way round.',
 },
 'as.sub2d.rg': {
-  idea: 'When the top digit is too small, borrow a ten from the next column. The number has not changed — it is just written differently.',
-  steps: ['If the top ones digit is smaller, borrow one ten from the tens column.', 'The ones become ten more; the tens become one less.', 'Now subtract each column.'],
-  ex: { q: 'What is 52 - 27?', steps: ['Ones: 2 is smaller than 7, so borrow. The 5 tens become 4, and the 2 ones become 12.', 'Ones: 12 - 7 = 5.', 'Tens: 4 - 2 = 2, which is 20.'], a: '25' },
-  watch: 'You cannot just flip the digits round. 2 - 7 is not 5 — you have to borrow first.',
+  anchor: "A ten can always be unbundled back into ten ones. Borrowing does not change the number, it just writes it differently.",
+  idea: "When the top digit is too small, unbundle a ten from the next column. 52 becomes 4 tens and 12 ones — still 52.",
+  steps: [
+    { do: "Line them up from the right." },
+    { do: "If the top ones digit is smaller, take one ten from the tens column.", why: "The tens digit goes down by one; the ones go up by ten." },
+    { do: "Now subtract each column." },
+  ],
+  ex: {
+    q: "What is 52 - 27?",
+    steps: [
+      { do: "Ones: 2 take away 7 will not go.", why: "You cannot take seven from two without going below zero." },
+      { do: "Unbundle a ten: the 5 tens become 4 tens, and the 2 ones become 12 ones.", why: "4 tens and 12 ones is 52 — the same number, written to make the subtraction possible." },
+      { do: "Ones: 12 - 7 = 5." },
+      { do: "Tens: 4 - 2 = 2, which is 20.", why: "Four tens, not five — one was lent to the ones." },
+    ],
+    a: "25",
+  },
+  turn: { q: "What is 61 - 38?", ask: "Which column has to borrow, and what does 6 become?", a: "23", why: "1 take 8 will not go, so 6 tens become 5 and the 1 becomes 11. 11 - 8 = 3, and 5 - 3 = 2 tens." },
+  watch: "You cannot flip the digits round and do 7 - 2. Taking the small from the big in each column gives 35, and it is the most common wrong answer there is.",
 },
 'as.jump100': {
   idea: 'Adding ten or a hundred changes only one digit. Seeing that is much faster than working it out.',
@@ -213,10 +299,25 @@ const LESSONS = {
   watch: 'A carry can happen in more than one column, and each one has to be added in.',
 },
 'as.subzero': {
-  idea: 'A zero has nothing to lend. To borrow across it you have to keep going left until you find a digit that does.',
-  steps: ['Find the first non-zero digit to the left.', 'Borrow from there. Every zero you passed becomes a 9.', 'Now subtract each column.'],
-  ex: { q: 'What is 400 - 137?', steps: ['The ones need to borrow, but the tens are 0.', 'Borrow from the hundreds: 4 becomes 3, the tens 0 becomes 9, the ones 0 becomes 10.', 'Ones: 10 - 7 = 3. Tens: 9 - 3 = 6. Hundreds: 3 - 1 = 2.'], a: '263' },
-  watch: 'This is the hardest subtraction there is. Go slowly and cross out as you go.',
+  anchor: "A zero has nothing to lend. To borrow past it you have to go further left, and every zero you pass turns into a 9.",
+  idea: "Borrowing across a zero is the same unbundling, done twice: a thousand becomes ten hundreds, and one of those hundreds becomes ten tens.",
+  steps: [
+    { do: "Look left until you find a digit bigger than zero.", why: "That is the nearest column with something to lend." },
+    { do: "Take one from it. Every zero you passed becomes 9.", why: "The borrowed hundred is unbundled into ten tens; nine stay behind and one goes on." },
+    { do: "The ones column gets its ten. Now subtract." },
+  ],
+  ex: {
+    q: "What is 400 - 137?",
+    steps: [
+      { do: "Ones: 0 take 7 will not go, and the tens are 0 too.", why: "Nothing next door to borrow from." },
+      { do: "Go to the hundreds: 4 becomes 3.", why: "One hundred has been taken out to unbundle." },
+      { do: "That hundred becomes 10 tens, and one of those becomes 10 ones. So the tens show 9 and the ones show 10.", why: "Nine tens stay; the tenth is broken into ones." },
+      { do: "Now: 10 - 7 = 3, 9 - 3 = 6, 3 - 1 = 2." },
+    ],
+    a: "263",
+  },
+  turn: { q: "What is 500 - 246?", ask: "What do the 5 and the middle 0 become?", a: "254", why: "5 becomes 4, the 0 becomes 9, the last 0 becomes 10. Then 10-6=4, 9-4=5, 4-2=2." },
+  watch: "This is the hardest subtraction there is. Cross out every digit you change and write the new one above it — trying to hold it in your head is where it goes wrong.",
 },
 'as.estimate': {
   idea: 'Estimating tells you roughly what the answer should be, so you notice when the exact one is wildly wrong.',
@@ -246,10 +347,24 @@ const LESSONS = {
 /* ══ MULTIPLICATION & DIVISION ══════════════════════════════════════════ */
 
 'md.groups': {
-  idea: 'Multiplying is adding the same amount again and again. Three groups of four is 4 + 4 + 4.',
-  steps: ['Work out how many groups there are.', 'Work out how many are in each group.', 'Add that amount once for every group.'],
-  ex: { q: 'What are 3 groups of 4?', steps: ['Three groups, four in each.', '4 + 4 + 4.'], a: '12' },
-  watch: 'The two numbers mean different things: one is how many groups, the other is how big each group is.',
+  anchor: "Three plates with four biscuits on each. You could count all twelve one at a time, or you could count in fours.",
+  idea: "Multiplying is adding the same amount over and over. The two numbers do different jobs: one says how many groups, the other says how big each group is.",
+  steps: [
+    { do: "Count how many groups there are." },
+    { do: "Count how many are in one group.", why: "They must all be the same size, or it is not multiplying." },
+    { do: "Add that amount once for every group." },
+  ],
+  ex: {
+    q: "What are 3 groups of 4?",
+    steps: [
+      { do: "There are 3 groups.", why: "That is how many times to add." },
+      { do: "Each group holds 4.", why: "That is what gets added." },
+      { do: "4 + 4 + 4 = 12.", why: "Three fours. Written short, that is 3 x 4." },
+    ],
+    a: "12",
+  },
+  turn: { q: "What are 5 groups of 2?", ask: "What gets added, and how many times?", a: "10", why: "2 added five times: 2, 4, 6, 8, 10." },
+  watch: "3 groups of 4 and 4 groups of 3 both come to 12, but they are different pictures. Three plates of four is not four plates of three.",
 },
 'md.arrays': {
   idea: 'An array is rows and columns. It shows why the order of a times fact does not matter.',
@@ -375,10 +490,24 @@ const LESSONS = {
   watch: 'The bottom counts ALL the parts, including the shaded ones — not just the empty ones.',
 },
 'fr.name': {
-  idea: 'Naming a fraction is reading two counts off the picture: how many parts in all, and how many are shaded.',
-  steps: ['Count every equal part. Write it on the bottom.', 'Count the shaded parts. Write it on top.'],
-  ex: { q: 'Three parts shaded out of eight', steps: ['Eight equal parts in the whole.', 'Three of them shaded.'], a: '3/8' },
-  watch: 'Getting the two numbers the wrong way up is the commonest slip. The bigger one is nearly always on the bottom.',
+  anchor: "Cut a pizza into 8 equal slices and take 3. You have three eighths — three of the pieces that eight of make a whole.",
+  idea: "The bottom number says what SIZE the pieces are, by counting how many make one whole. The top number says how many of them you have.",
+  steps: [
+    { do: "Count all the equal parts in the whole. That is the bottom number.", why: "It names the size of one piece. More pieces means each is smaller." },
+    { do: "Count the shaded parts. That is the top number." },
+    { do: "Check the parts really are all the same size.", why: "Unequal pieces are not a fraction at all." },
+  ],
+  ex: {
+    q: "Three parts are shaded out of eight. What fraction is that?",
+    steps: [
+      { do: "The whole is cut into 8 equal parts, so the bottom is 8.", why: "Each piece is one eighth of the whole." },
+      { do: "3 of them are shaded, so the top is 3." },
+      { do: "That is three eighths.", why: "Three pieces, each one eighth in size." },
+    ],
+    a: "3/8",
+  },
+  turn: { q: "Two parts shaded out of six. What fraction?", ask: "Which number goes on the bottom, and why?", a: "2/6", why: "Six equal parts make the whole, so 6 is the bottom. Two are shaded, so 2 is the top." },
+  watch: "The bottom counts ALL the parts, not just the empty ones. And a bigger bottom number means smaller pieces: one eighth is less than one third.",
 },
 'fr.numline': {
   idea: 'A fraction is a number, so it has a place on the number line — between the whole numbers.',
