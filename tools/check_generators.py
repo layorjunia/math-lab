@@ -47,6 +47,7 @@ os.environ.setdefault('HF_HOME', os.path.join(ROOT, '.work', 'hf'))
 # Node evaluates the real generator file. There is no second implementation in
 # Python to drift out of step with the one the app actually runs.
 DUMP = r'''
+globalThis.window = globalThis;   // games.js/family.js publish onto it
 const fs = require('fs');
 const load = f => { const s = fs.readFileSync(f, 'utf8')
   .replace(/^const (\w+)/gm, 'globalThis.$1'); eval(s); };

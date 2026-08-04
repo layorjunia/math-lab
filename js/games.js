@@ -93,7 +93,7 @@ const QUESTS = [
   {
     id: 'belowzero', name: 'Below Zero', glyph: '🌡️', tint: 'npv',
     intro: 'The number line does not stop at zero, and everything you know still works.',
-    outro: 'Owing three pounds and having minus three pounds are the same fact written two ways.',
+    outro: 'Owing three dollars and having minus three dollars are the same fact written two ways.',
     stops: [
       { s: 'npv.integers', note: 'Where the negatives live.' },
       { s: 'npv.abs', note: 'How far from zero, ignoring which side.' },

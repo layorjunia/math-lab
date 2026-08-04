@@ -44,6 +44,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import wave
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -74,6 +75,7 @@ def norm(text):
 
 # ── corpus ───────────────────────────────────────────────────────────────
 _DUMP = r'''
+globalThis.window = globalThis;   // games.js/family.js publish onto it
 const fs = require('fs');
 // /gm, not /m: several of these files declare more than one top-level const,
 // and a non-global replace only reaches the first one.
@@ -81,7 +83,7 @@ const load = f => { const s = fs.readFileSync(f, 'utf8')
   .replace(/^const (\w+)/gm, 'globalThis.$1'); eval(s); };
 load('js/schema.js'); load('js/skills.js'); load('js/numspeak.js');
 load('js/generators.js'); load('js/manipulatives.js'); load('js/ui-speech.js');
-load('js/lessons.js');
+load('js/lessons.js'); load('js/games.js');
 
 const prose = new Set(), add = t => { if (t && String(t).trim()) prose.add(String(t)); };
 
@@ -102,6 +104,11 @@ Object.values(LESSONS).forEach(l => {
   if (l.ex) { add(l.ex.q); (l.ex.steps || []).forEach(add); }
   add(l.watch);
 });
+
+// The quest framing. Twelve Listen buttons pointed at strings that were never
+// rendered, because this file did not know games.js existed — caught by
+// audit_resolve.py, which is the whole reason that gate is run.
+QUESTS.forEach(q => { add(q.intro); add(q.outro); });
 
 // Hints and fixed question text are literals inside the generators, so the only
 // honest way to enumerate them is to run the generators. Anything that varies
@@ -264,7 +271,34 @@ def spoken_key(text):
                     lambda m: str(int(m.group(1)) + int(m.group(2)))
                     if int(m.group(1)) % 100 == 0 and int(m.group(2)) < 100 else m.group(0),
                     joined)
+    # faster-whisper writes a spoken fraction as a digit ordinal: "eight
+    # sixteenths" comes back as "8-16th", "18-20th's", "11 9th". Without this
+    # 165 of the 179 first-run suspects were this one artifact, and a report
+    # that is 90% artifact is a report nobody reads.
+    joined = re.sub(r'\b(\d+)[\s-]+(\d+)(?:st|nd|rd|th)s?\'?s?\b', r'\1/\2', joined)
     return joined
+
+
+def numeric_match(expected, heard):
+    """Accept the shapes whisper writes for a number, and nothing looser.
+
+    Deliberately NOT a blanket "strip every separator and compare": that would
+    let a clip saying "eighty-four" pass as "eight fourths", since both collapse
+    to 84. These two rules are exact.
+    """
+    want, got = spoken_key(expected), spoken_key(heard)
+    if want == got:
+        return True
+    digits = re.findall(r'\d+', got)
+    # A fraction: "eight fourths" -> 8/4, and whisper writes "8-4", "8 4th",
+    # "8-4ths" — two separate numbers in the same order.
+    m = re.fullmatch(r'(\d+)/(\d+)', want)
+    if m and digits == [m.group(1), m.group(2)]:
+        return True
+    # A compound integer: "eighty-one" -> 81, and whisper writes "8-1".
+    if re.fullmatch(r'\d+', want) and ''.join(digits) == want:
+        return True
+    return False
 
 
 ALIASES = {
@@ -278,6 +312,95 @@ ALIASES = {
     'to': {'to', '2', 'too'},
     'is': {'is'},
 }
+
+
+CARRIERS = [
+    'We can say {w} again today.',
+    'The word {w} is on this page.',
+    'She said {w} and then smiled.',
+    'I like the word {w} very much.',
+]
+
+
+def rescue(engine, listener, text, out_path):
+    """Cut the word out of a spoken sentence.
+
+    Piper drifts on very short inputs because the model has almost no context to
+    condition on, and no amount of re-rolling shakes some of them loose: `ounce`
+    came out "bounce" and `quart` came out "report" on every draw. The same
+    words are perfect inside a sentence.
+
+    So: synthesise a carrier with the word MID-SENTENCE (a sentence-final word
+    gets a clipped, falling delivery), ask the recogniser for word timestamps,
+    and cut the target out. The cut is then re-checked ON ITS OWN and only kept
+    if it passes — without that, a merged word earlier in the carrier silently
+    overwrites the clip with something else entirely, which is a worse failure
+    than the one being fixed.
+    """
+    import numpy as np
+    from piper import PiperVoice
+    from piper.config import SynthesisConfig
+    voice = engine.voice
+    target = str(text).strip().lower()
+    ntok = len(target.split())
+
+    for carrier in CARRIERS:
+        for ls in (1.0, 1.15, 0.92):
+            cs = list(voice.synthesize(carrier.format(w=target),
+                                       syn_config=SynthesisConfig(length_scale=ls)))
+            audio = np.concatenate([np.frombuffer(c.audio_int16_bytes, dtype=np.int16)
+                                    for c in cs])
+            sr = cs[0].sample_rate
+            wav = tempfile.mktemp(suffix='.wav')
+            with wave.open(wav, 'wb') as w:
+                w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
+                w.writeframes(audio.tobytes())
+            segs, _ = listener.m.transcribe(wav, language='en', beam_size=5,
+                                            vad_filter=False, word_timestamps=True)
+            stamps = [x for sg in segs for x in (sg.words or [])]
+            os.unlink(wav)
+            if not stamps:
+                continue
+            words = [x.word.strip().lower().strip(".,!?\'\"") for x in stamps]
+            first = target.split()[0]
+            idx = next((i for i, w in enumerate(words) if w == first), None)
+            if idx is None:
+                # Some words the recogniser never spells back correctly. Fall
+                # back to the word's SLOT in the carrier, so the cut is driven by
+                # position rather than by the recogniser agreeing with us.
+                slot = carrier.split().index('{w}')
+                idx = slot if slot < len(stamps) else None
+            if idx is None or idx + ntok > len(stamps):
+                continue
+            a = max(0.0, stamps[idx].start - 0.055)
+            b = min(len(audio) / sr, stamps[idx + ntok - 1].end + 0.075)
+            cut = audio[int(a * sr):int(b * sr)].astype(np.float32)
+            if cut.size < sr * 0.08:
+                continue
+            peak = float(np.max(np.abs(cut))) or 1.0
+            cut = cut * (26000.0 / peak)
+            n = min(int(sr * 0.008), cut.size // 2)
+            if n > 0:
+                ramp = np.linspace(0, 1, n)
+                cut[:n] *= ramp
+                cut[-n:] *= ramp[::-1]
+            tmp = out_path + '.try.wav'
+            with wave.open(tmp, 'wb') as w:
+                w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
+                w.writeframes(np.clip(cut, -32000, 32000).astype(np.int16).tobytes())
+            probe = out_path + '.try.m4a'
+            r = subprocess.run(['afconvert', '-f', 'm4af', '-d', 'aac', '-b',
+                                os.environ.get('PIPER_BITRATE', '48000'), tmp, probe],
+                               capture_output=True, text=True)
+            os.unlink(tmp)
+            if r.returncode != 0:
+                continue
+            ok = listener.accepts(probe, text)
+            if ok is True:
+                shutil.move(probe, out_path)
+                return True
+            os.unlink(probe)
+    return False
 
 
 class Listener:
@@ -294,7 +417,7 @@ class Listener:
     def accepts(self, path, expected):
         heard = self.hear(path)
         want, got = spoken_key(expected), spoken_key(heard)
-        if want == got:
+        if want == got or numeric_match(expected, heard):
             return True
         al = ALIASES.get(str(expected).lower())
         if al and got in {spoken_key(x) for x in al}:
@@ -312,6 +435,8 @@ def main():
                     help='skip the listen-and-re-roll pass over short clips')
     ap.add_argument('--attempts', type=int, default=6,
                     help='re-roll budget per short clip; RATES has 6 entries')
+    ap.add_argument('--recheck', action='store_true',
+                    help='re-verify only the clips in the last suspect report')
     args = ap.parse_args()
 
     try:
@@ -368,13 +493,42 @@ def main():
 
     # ── listen to the short clips and re-roll the wrong ones ──
     suspect = []
-    if not args.no_verify and jobs:
+    if args.recheck:
+        old = os.path.join(ROOT, 'tools', 'audio-suspect-report.json')
+        prior = json.load(open(old)) if os.path.exists(old) else []
+        keys = [x['key'] for x in prior if x['key'] in manifest['words']]
+        print(f're-checking {len(keys)} previously suspect clip(s)')
+        if keys:
+            listener = Listener()
+            fixed = rescued = 0
+            for key in keys:
+                path = os.path.join(AUDIO, clip_path(key))
+                spoken = numbers.get(key, prose.get(key, key))
+                got = listener.accepts(path, spoken)
+                if got is True:
+                    continue
+                for k in range(args.attempts):
+                    ls = [None, 1.15, 0.95, 1.3, 1.05, 1.45][k % 6]
+                    engine.speak_text(spoken, path, length_scale=ls)
+                    got = listener.accepts(path, spoken)
+                    if got is True:
+                        fixed += 1
+                        break
+                if got is not True:
+                    if rescue(engine, listener, spoken, path):
+                        rescued += 1
+                    else:
+                        suspect.append({'key': key, 'spoken': spoken, 'heard': got})
+            print(f'{len(keys) - fixed - rescued - len(suspect)} were already fine; '
+                  f're-rolled {fixed}; rescued from a carrier {rescued}; '
+                  f'{len(suspect)} unresolved')
+    elif not args.no_verify and jobs:
         rev = {os.path.join(AUDIO, clip_path(k)): k for k in manifest['words']}
         fresh_short = [rev[o] for o in jobs if rev.get(o) in short_keys]
         if fresh_short:
             print(f'listening to {len(fresh_short)} newly rendered short clip(s)')
             listener = Listener()
-            checked = fixed = 0
+            checked = fixed = rescued = 0
             for key in sorted(fresh_short):
                 path = os.path.join(AUDIO, clip_path(key))
                 spoken = numbers.get(key, key)
@@ -394,11 +548,17 @@ def main():
                         fixed += 1
                         break
                 if got is not True:
-                    suspect.append({'key': key, 'spoken': spoken, 'heard': got})
+                    # Re-rolling did not shake it loose, so cut the word out of
+                    # a carrier sentence instead.
+                    if rescue(engine, listener, spoken, path):
+                        rescued += 1
+                    else:
+                        suspect.append({'key': key, 'spoken': spoken, 'heard': got})
                 if checked % 100 == 0:
                     print(f'  listened {checked}/{len(fresh_short)}, re-rolled {fixed}, '
                           f'{len(suspect)} still suspect')
-            print(f'listened to {checked}; re-rolled {fixed}; {len(suspect)} unresolved')
+            print(f'listened to {checked}; re-rolled {fixed}; rescued from a carrier '
+                  f'{rescued}; {len(suspect)} unresolved')
 
     with open(MANIFEST, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, separators=(',', ':'), ensure_ascii=False)

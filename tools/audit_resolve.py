@@ -36,11 +36,13 @@ globalThis.fetch = () => Promise.reject();
 globalThis.document = { addEventListener() {}, removeEventListener() {},
                         querySelector() { return null; } };
 globalThis.location = { hostname: 'localhost', protocol: 'http:', origin: 'http://localhost' };
+globalThis.window = globalThis;   // games.js/family.js publish onto it
 const fs = require('fs');
 const load = f => { const s = fs.readFileSync(f, 'utf8')
   .replace(/^const (\w+)/gm, 'globalThis.$1'); eval(s); };
 load('js/schema.js'); load('js/skills.js'); load('js/numspeak.js');
 load('js/generators.js'); load('js/manipulatives.js'); load('js/ui-speech.js');
+load('js/lessons.js'); load('js/games.js');
 const AudioLib = eval(fs.readFileSync('js/audio.js', 'utf8') + '; AudioLib');
 AudioLib.manifest = JSON.parse(fs.readFileSync('audio/manifest.json', 'utf8'));
 
@@ -57,6 +59,15 @@ Object.values(STRANDS).forEach(v => proseCheck(v.name));
 Object.values(GRADES).forEach(v => proseCheck(v.name));
 Object.values(ERRORS).forEach(e => { proseCheck(e.name); proseCheck(e.say); proseCheck(e.fix); });
 UI_PHRASES.forEach(proseCheck);
+// The lessons are now the largest body of spoken prose in the app. A gate that
+// does not cover them is a gate over a third of the text.
+Object.values(LESSONS).forEach(l => {
+  proseCheck(l.idea);
+  (l.steps || []).forEach(proseCheck);
+  if (l.ex) { proseCheck(l.ex.q); (l.ex.steps || []).forEach(proseCheck); }
+  proseCheck(l.watch);
+});
+QUESTS.forEach(q => { proseCheck(q.intro); proseCheck(q.outro); });
 
 // Every part of every composed expression must exist. Sampling every generator
 // hard is the point: a number the composer can name but the corpus never
