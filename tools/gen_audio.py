@@ -98,10 +98,22 @@ UI_PHRASES.forEach(add);
 // The lessons. This is the largest and most important prose in the app — the
 // idea, the method, the worked example and the trap — and it is all authored
 // literals, so every line of it can have a clip.
+// A worked step is {do, why} now, not a string. Passing the object straight to
+// add() stringified it to "[object Object]" — one clip, and every step of every
+// lesson silently absent from the corpus. 21,000 words of teaching would have
+// had no audio at all, and nothing would have said so.
+const sayStep = t => (typeof t === 'string') ? t
+  : [t.do, t.why].filter(Boolean).join(' ');
 Object.values(LESSONS).forEach(l => {
+  add(l.anchor);
   add(l.idea);
-  (l.steps || []).forEach(add);
-  if (l.ex) { add(l.ex.q); (l.ex.steps || []).forEach(add); }
+  (l.steps || []).forEach(t => add(sayStep(t)));
+  if (l.ex) {
+    add(l.ex.q);
+    (l.ex.steps || []).forEach(t => add(sayStep(t)));
+    add('The answer is ' + l.ex.a);
+  }
+  if (l.turn) { add(l.turn.q); add(l.turn.ask); add(l.turn.a); add(l.turn.why); }
   add(l.watch);
 });
 

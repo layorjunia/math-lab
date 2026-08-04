@@ -61,10 +61,19 @@ Object.values(ERRORS).forEach(e => { proseCheck(e.name); proseCheck(e.say); pros
 UI_PHRASES.forEach(proseCheck);
 // The lessons are now the largest body of spoken prose in the app. A gate that
 // does not cover them is a gate over a third of the text.
+const sayStep = t => (typeof t === 'string') ? t
+  : [t.do, t.why].filter(Boolean).join(' ');
 Object.values(LESSONS).forEach(l => {
+  proseCheck(l.anchor);
   proseCheck(l.idea);
-  (l.steps || []).forEach(proseCheck);
-  if (l.ex) { proseCheck(l.ex.q); (l.ex.steps || []).forEach(proseCheck); }
+  (l.steps || []).forEach(t => proseCheck(sayStep(t)));
+  if (l.ex) {
+    proseCheck(l.ex.q);
+    (l.ex.steps || []).forEach(t => proseCheck(sayStep(t)));
+    proseCheck('The answer is ' + l.ex.a);
+  }
+  if (l.turn) { proseCheck(l.turn.q); proseCheck(l.turn.ask);
+                proseCheck(l.turn.a); proseCheck(l.turn.why); }
   proseCheck(l.watch);
 });
 QUESTS.forEach(q => { proseCheck(q.intro); proseCheck(q.outro); });
