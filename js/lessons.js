@@ -78,6 +78,7 @@ const LESSONS = {
   watch: "Crossing a hundred is where counting slips. After 99 comes 100, and after 109 comes 110.",
 },
 'npv.pv2': {
+  fig: { kind: 'places', n: 47, hi: 1 },
   anchor: "Ten ones make a ten. When you get ten of something you bundle it up, and the bundle moves one place to the left.",
   idea: "Where a digit sits is what decides its value. In 47 the 4 is not worth four — it is worth forty, because it sits in the tens place.",
   steps: [
@@ -98,6 +99,7 @@ const LESSONS = {
   watch: "A digit and what it is worth are two different things. The digit is 4; its value is 40.",
 },
 'npv.compare2': {
+  fig: { kind: 'places', n: 38, hi: 1 },
   anchor: "Two piles of coins. You do not count every coin — you look at whose pile has more tens first.",
   idea: "Compare the biggest place first. Tens beat ones, so a number with more tens is bigger no matter what the ones are.",
   steps: [
@@ -136,6 +138,7 @@ const LESSONS = {
   watch: "Counting in fives always lands on a 0 or a 5. If your answer ends in anything else, check the jump.",
 },
 'npv.pv3': {
+  fig: { kind: 'places', n: 462, hi: 1 },
   anchor: "Ten ones make a ten, and ten tens make a hundred. Each new place is another bundling.",
   idea: "Every place to the left is worth ten times the one before it. That is the whole rule, and it never changes however long the number gets.",
   steps: [
@@ -234,6 +237,7 @@ const LESSONS = {
   watch: "It is the tens digit that decides, not the ones. In 362 the 2 never gets a vote.",
 },
 'npv.pv4': {
+  fig: { kind: 'places', n: 5283, hi: 2 },
   anchor: "Ten hundreds make a thousand — the same bundling one step further.",
   idea: "Where a digit sits decides its value. In 5,283 the 2 is not worth two, it is worth two hundred.",
   steps: [
@@ -254,6 +258,7 @@ const LESSONS = {
   watch: "The digit and its value are different. The digit is 2; what it is worth is 200. The comma only helps you read the number — it changes nothing.",
 },
 'npv.pv6': {
+  fig: { kind: 'places', n: 348912, hi: 4 },
   anchor: "The places repeat in groups of three, and the comma marks where each group ends: ones, tens, hundreds — then thousands, ten thousands, hundred thousands.",
   idea: "Big numbers are not a new system. It is the same three places over again, counting thousands instead of ones.",
   steps: [
@@ -430,6 +435,7 @@ const LESSONS = {
   watch: "9 - 4 and 4 - 9 are not the same. Adding can be turned round; subtracting cannot.",
 },
 'as.bonds10': {
+  fig: { kind: 'tenframe', filled: 7 },
   anchor: "A ten-frame with seven counters in it has three holes. Those pairs that fill a ten are worth knowing without thinking.",
   idea: "The pairs that make ten are the most useful facts in early math. Every later trick for adding across ten depends on knowing them instantly.",
   steps: [
@@ -449,6 +455,7 @@ const LESSONS = {
   watch: "These come in pairs. Learning 7 and 3 gets you 3 and 7 free — there are far fewer of these to learn than it looks.",
 },
 'as.add20': {
+  fig: { kind: 'tenframe', filled: 8, extra: 5 },
   anchor: "Seven counters and five more. Move two of the five across to fill the ten-frame, and you can see at a glance it is ten and three.",
   idea: "When a sum crosses ten, make the ten first and add what is left over. This is where carrying comes from, met before the notation.",
   steps: [
@@ -469,6 +476,7 @@ const LESSONS = {
   watch: "Counting on your fingers works but breaks down past ten. Making the ten scales all the way to column addition.",
 },
 'as.sub20': {
+  fig: { kind: 'tenframe', filled: 10, extra: 5 },
   anchor: "Fifteen counters, take away seven. Take five off to land exactly on ten, then take the other two.",
   idea: "Subtracting across ten works in reverse: get down to ten first, then take the rest. Landing on ten is the safe stopping point.",
   steps: [
@@ -507,6 +515,7 @@ const LESSONS = {
   watch: "The answer is the GAP, not the total. It has to be smaller than the number on the right of the equals sign.",
 },
 'as.add2d.nr': {
+  fig: { kind: 'column', a: 34, b: 25, op: '+' },
   anchor: "Two piles of bundled tens and loose ones. Tip the loose ones together, tip the bundles together, and count each kind separately.",
   idea: "Two-digit addition is two small sums: add the ones, then add the tens. They stay separate because a ten and a one are different sizes.",
   steps: [
@@ -527,6 +536,7 @@ const LESSONS = {
   watch: "Line up from the RIGHT, never the left. Ones under tens gives an answer that is wildly out.",
 },
 'as.add2d.rg': {
+  fig: { kind: 'column', a: 47, b: 28, op: '+' },
   anchor: "Ten ones make a ten. If a column ever collects ten, you bundle it and the bundle moves one place left. That is all regrouping is.",
   idea: "When a column adds to ten or more, the ten does not vanish — it moves to the next column. Forgetting it makes your answer exactly ten too small.",
   steps: [
@@ -548,6 +558,7 @@ const LESSONS = {
   watch: "If you forget the carry you get 55 instead of 75 — exactly ten short. An answer that is ten out is almost always a missing carry.",
 },
 'as.sub2d.nr': {
+  fig: { kind: 'column', a: 68, b: 23, op: '-' },
   anchor: "Six bundles of ten and eight loose ones. Take away two bundles and three loose ones — the bundles and the loose ones never mix.",
   idea: "Subtracting two-digit numbers is two small subtractions: the ones, then the tens. They stay separate because a ten and a one are different sizes.",
   steps: [
@@ -568,6 +579,7 @@ const LESSONS = {
   watch: "Always take the bottom digit from the top one. If the top is smaller you cannot just flip them — you have to borrow, which is the next skill.",
 },
 'as.sub2d.rg': {
+  fig: { kind: 'column', a: 52, b: 27, op: '-' },
   anchor: "A ten can always be unbundled back into ten ones. Borrowing does not change the number, it just writes it differently.",
   idea: "When the top digit is too small, unbundle a ten from the next column. 52 becomes 4 tens and 12 ones — still 52.",
   steps: [
@@ -609,6 +621,7 @@ const LESSONS = {
   watch: "A 9 in the column you are adding to rolls over. 195 + 10 is 205, not 105.",
 },
 'as.add3d': {
+  fig: { kind: 'column', a: 285, b: 147, op: '+' },
   anchor: "Three columns of bundles now: hundreds, tens and ones. Every time a column reaches ten of something, it bundles up and moves left.",
   idea: "Three-digit addition is the same three steps with one more column. A carry can happen in more than one column, and each one must be added in.",
   steps: [
@@ -629,6 +642,7 @@ const LESSONS = {
   watch: "One carry is easy to remember; two is where it goes wrong. Write each carry down above the column it goes into.",
 },
 'as.subzero': {
+  fig: { kind: 'column', a: 400, b: 137, op: '-' },
   anchor: "A zero has nothing to lend. To borrow past it you have to go further left, and every zero you pass turns into a 9.",
   idea: "Borrowing across a zero is the same unbundling, done twice: a thousand becomes ten hundreds, and one of those hundreds becomes ten tens.",
   steps: [
@@ -669,6 +683,7 @@ const LESSONS = {
   watch: "An estimate is not meant to match exactly. Do not go back and correct it towards the real answer — that defeats the point.",
 },
 'as.addmulti': {
+  fig: { kind: 'column', a: 4586, b: 2745, op: '+' },
   anchor: "However many columns there are, each one still bundles at ten and passes the bundle left. Nothing new is happening.",
   idea: "Long addition is not harder, only longer. Keeping the columns straight is the whole job.",
   steps: [
@@ -689,6 +704,7 @@ const LESSONS = {
   watch: "Long numbers are not harder, just longer. If the columns drift the answer can be out by thousands.",
 },
 'as.submulti': {
+  fig: { kind: 'column', a: 5304, b: 2167, op: '-' },
   anchor: "The same unbundling, repeated across more columns. A thousand becomes ten hundreds whenever you need it to.",
   idea: "Long subtraction is the borrowing you already know, applied column by column. Write every change down.",
   steps: [
@@ -733,6 +749,7 @@ const LESSONS = {
 /* ══ MULTIPLICATION & DIVISION ══════════════════════════════════════════ */
 
 'md.groups': {
+  fig: { kind: 'array', rows: 3, cols: 4, grouped: true },
   anchor: "Three plates with four biscuits on each. You could count all twelve one at a time, or you could count in fours.",
   idea: "Multiplying is adding the same amount over and over. The two numbers do different jobs: one says how many groups, the other says how big each group is.",
   steps: [
@@ -753,6 +770,7 @@ const LESSONS = {
   watch: "3 groups of 4 and 4 groups of 3 both come to 12, but they are different pictures. Three plates of four is not four plates of three.",
 },
 'md.arrays': {
+  fig: { kind: 'array', rows: 3, cols: 5 },
   anchor: "Eggs in a box sit in rows. You do not count them one by one — you see three rows of four and know there are twelve.",
   idea: "An array is rows and columns. Turning it on its side does not change how many there are, which is exactly why 3 x 5 and 5 x 3 match.",
   steps: [
@@ -1144,6 +1162,7 @@ const LESSONS = {
   watch: "Equal means the same SIZE. Pieces can be different shapes and still be equal — a square cut corner to corner gives two equal triangles.",
 },
 'fr.thirds': {
+  fig: { kind: 'bar', d: 3, n: 1 },
   anchor: "Three children share one chocolate bar. Break it into three equal pieces and each child gets one third.",
   idea: "The bottom number says how many equal parts the whole was cut into. The top says how many of them you have.",
   steps: [
@@ -1164,6 +1183,7 @@ const LESSONS = {
   watch: "The bottom counts ALL the parts, not just the unshaded ones. One shaded out of three is 1/3, not 1/2.",
 },
 'fr.name': {
+  fig: { kind: 'bar', d: 8, n: 3 },
   anchor: "Cut a pizza into 8 equal slices and take 3. You have three eighths — three of the pieces that eight of make a whole.",
   idea: "The bottom number says what SIZE the pieces are, by counting how many make one whole. The top number says how many of them you have.",
   steps: [
@@ -1204,6 +1224,7 @@ const LESSONS = {
   watch: "Count the GAPS, not the ticks. Four gaps between 0 and 1 means fourths, and there are five ticks including both ends.",
 },
 'fr.equiv': {
+  fig: { kind: 'bar', d: 9, n: 6 },
   anchor: "Half a pizza and two quarters of the same pizza are the same amount of pizza. The slices are cut differently; the food is identical.",
   idea: "The same amount can be written many ways. Cutting every piece into more pieces changes both numbers but not the value.",
   steps: [
@@ -1224,6 +1245,7 @@ const LESSONS = {
   watch: "Both numbers must change by the same multiplier. Changing only one changes the value — 2/3 is not 6/3.",
 },
 'fr.cmp.same': {
+  fig: { kind: 'bar', d: 8, n: 5 },
   anchor: "Two people with slices from the same pizza. Same-size slices, so more slices is simply more.",
   idea: "When the bottom numbers match, the pieces are the same size, so you only have to compare how many.",
   steps: [
@@ -1243,6 +1265,7 @@ const LESSONS = {
   watch: "This shortcut ONLY works when the bottoms match. With different bottoms the pieces are different sizes and counting them proves nothing.",
 },
 'fr.whole': {
+  fig: { kind: 'bar', d: 5, n: 5 },
   anchor: "Cut a cake into eight slices and put every slice back. You have the whole cake — eight eighths.",
   idea: "When the top and bottom match, you have one whole. Two wholes takes twice as many pieces.",
   steps: [
@@ -1283,6 +1306,7 @@ const LESSONS = {
   watch: "A bigger bottom number means a SMALLER piece. One eighth is less than one third, even though 8 is more than 3.",
 },
 'fr.as.same': {
+  fig: { kind: 'bar', d: 8, n: 5 },
   anchor: "Three eighths of a pizza and two eighths more. Same-size slices, so you just count slices: five of them.",
   idea: "With the same-size pieces, adding fractions is only counting how many you have. The bottom number never changes.",
   steps: [
@@ -1324,6 +1348,7 @@ const LESSONS = {
   watch: "Adding straight across gives 2/5 for 1/2 + 1/3, which is SMALLER than the half you started with. Adding cannot make things smaller — that is your check.",
 },
 'fr.simplify': {
+  fig: { kind: 'bar', d: 18, n: 12 },
   anchor: "Six pieces out of eight, and every piece can be paired up: it is the same as three out of four. Fewer, bigger pieces, same amount.",
   idea: "Simplifying writes the same value with the smallest possible numbers.",
   steps: [
@@ -1366,6 +1391,7 @@ const LESSONS = {
   watch: "The bottom NEVER changes. Only the top grows, because you are counting the same-sized pieces.",
 },
 'fr.mult.whole': {
+  fig: { kind: 'bar', d: 5, n: 2 },
   anchor: "Three helpings of two fifths each. You are taking two fifths, three times over.",
   idea: "Multiplying a fraction by a whole number is taking that many of them. The pieces do not change size, so the bottom does not change.",
   steps: [

@@ -863,6 +863,135 @@ const S = {
              slips: G.slips({ v, dp: 2 }, [{ v: { v, dp: 1 }, tag: 'pv.digit' },
                                            { v: { v: v * 10, dp: 2 }, tag: 'dec.places' }]) };
   };
+
+/* ══ WORKED-EXAMPLE FIGURES ═══════════════════════════════════════════════
+ *
+ * The lessons explained column arithmetic in words: "Ones: 5 + 7 = 12. Write 2,
+ * carry 1." That is a description of a picture, handed to a child who has never
+ * seen the picture.
+ *
+ * These draw the actual thing — digits in their columns, the carry written
+ * small above the column it goes into, a rule under the sum — and take a `step`
+ * so the lesson can highlight the column it is currently talking about.
+ *
+ * Everything is the same generated SVG as the problems use, so it themes with
+ * the app and costs nothing to ship.
+ */
+const Fig = {
+  // Vertical column addition or subtraction, with carries or borrows shown.
+  column(a, b, op, step) {
+    const A = String(a), B = String(b);
+    const res = op === '+' ? a + b : a - b;
+    const R = String(res);
+    const width = Math.max(A.length, B.length, R.length);
+    const cw = 34, pad = 26, top = 34;
+    const W = pad * 2 + (width + 1) * cw, H = top + 132;
+    const colX = i => pad + cw * (width - i) + cw / 2;   // i = 0 is the ones
+
+    // Work out the carries (or borrows) column by column, exactly as the
+    // method does, so the figure and the prose cannot disagree.
+    const marks = [];
+    if (op === '+') {
+      let c = 0;
+      for (let i = 0; i < width; i++) {
+        const d = (Math.floor(a / Math.pow(10, i)) % 10) + (Math.floor(b / Math.pow(10, i)) % 10) + c;
+        c = d >= 10 ? 1 : 0;
+        if (c) marks.push({ i: i + 1, t: '1' });
+      }
+    } else {
+      let br = 0;
+      for (let i = 0; i < width; i++) {
+        const t = (Math.floor(a / Math.pow(10, i)) % 10) - br;
+        const u = Math.floor(b / Math.pow(10, i)) % 10;
+        if (t < u) {
+          marks.push({ i, t: String(t + 10), borrow: true });
+          // and the column that lent it, one smaller
+          const lender = Math.floor(a / Math.pow(10, i + 1)) % 10;
+          if (i + 1 < width) marks.push({ i: i + 1, t: String(lender - 1), borrow: true, lent: true });
+          br = 1;
+        } else br = 0;
+      }
+    }
+
+    let s = '';
+    // the column being talked about
+    if (step != null && step >= 0 && step < width) {
+      s += S.rect(colX(step) - cw / 2 + 2, top - 22, cw - 4, 104,
+                  'rgba(255,180,61,.13)', null, 'rx="7"');
+    }
+    // carries / borrow annotations
+    marks.forEach(m => {
+      if (m.i > width) return;
+      s += S.text(colX(m.i) + (m.borrow ? 0 : -9), top - 8, m.t, 13,
+                  m.borrow ? S.DIM : S.ON);
+    });
+    // the two numbers
+    [...A].reverse().forEach((d, i) => { s += S.text(colX(i), top + 22, d, 27, S.TXT); });
+    s += S.text(colX(width) + 2, top + 60, op, 24, S.ON);
+    [...B].reverse().forEach((d, i) => { s += S.text(colX(i), top + 60, d, 27, S.TXT); });
+    // rule, then the answer
+    s += S.line(pad + 4, top + 80, W - pad + 8, top + 80, S.INK, 2.5);
+    [...R].reverse().forEach((d, i) => {
+      const lit = step == null || i <= step;
+      s += S.text(colX(i), top + 108, d, 27, lit ? S.ON : 'transparent');
+    });
+    return S.wrap(W, H, s);
+  },
+
+  // A place-value chart: the columns named, the digits sitting in them.
+  places(n, highlight) {
+    const ds = String(n).split('');
+    const names = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands', 'hundred thousands'];
+    const cw = 84, h = 62, pad = 6;
+    const W = pad * 2 + ds.length * cw, H = h + 46;
+    let s = '';
+    ds.forEach((d, i) => {
+      const place = ds.length - 1 - i;
+      const x = pad + i * cw;
+      const on = highlight === place;
+      s += S.rect(x + 2, 20, cw - 4, h, on ? 'rgba(255,180,61,.16)' : S.FILL,
+                  on ? S.ON : S.INK, 'rx="8"');
+      s += S.text(x + cw / 2, 12, names[place] || '', 10, S.DIM);
+      s += S.text(x + cw / 2, 20 + h / 2, d, 30, on ? S.ON : S.TXT);
+      s += S.text(x + cw / 2, H - 10, on ? 'worth ' + (+d * Math.pow(10, place)) : '',
+                  11, S.ON);
+    });
+    return S.wrap(W, H, s);
+  },
+
+  // Ten-frames: the concrete anchor for making ten.
+  tenFrame(filled, extra) {
+    const c = 26, pad = 6;
+    const W = pad * 2 + 5 * c + 24 + (extra ? 5 * c : 0), H = pad * 2 + 2 * c;
+    let s = '';
+    const frame = (ox, count, colour) => {
+      let g = S.rect(ox, pad, 5 * c, 2 * c, S.FILL, S.INK, 'rx="5"');
+      for (let i = 1; i < 5; i++) g += S.line(ox + i * c, pad, ox + i * c, pad + 2 * c, S.INK, 1);
+      g += S.line(ox, pad + c, ox + 5 * c, pad + c, S.INK, 1);
+      for (let k = 0; k < count; k++) {
+        g += S.circle(ox + (k % 5) * c + c / 2, pad + Math.floor(k / 5) * c + c / 2, 8, colour, null);
+      }
+      return g;
+    };
+    s += frame(pad, filled, S.ON);
+    if (extra) s += frame(pad + 5 * c + 24, extra, 'var(--geo)');
+    return S.wrap(W, H, s);
+  },
+
+  // An array of dots. `grouped` rings each row, which is the difference
+  // between "3 groups of 4" and "a 3 by 4 array" — the same total, a different
+  // idea, and the lesson is about one of them.
+  array(rows, cols, grouped) {
+    return dots(rows, cols, !!grouped);
+  },
+
+  // A bar split into d parts with n shaded — the fraction anchor.
+  bar(d, n) { return bar(d, n); },
+};
+
+  (function (root) { root.Fig = Fig; })(
+    typeof globalThis !== 'undefined' ? globalThis : this);
+
 })();
 
 (function (root) { root.S = S; })(typeof globalThis !== 'undefined' ? globalThis : this);

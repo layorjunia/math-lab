@@ -44,7 +44,26 @@ families/{familyCode}/children/{childSlug}/apps/{appId}
   { uid, name, app, summary, updatedAt }
 ```
 
-### Firestore rules — paste this whole block into the console
+### Firestore rules — DEPLOYED 4 Aug 2026
+
+> **What was actually live before this, and why Wonder Lab's sync was broken.**
+> Both apps' docs said the deployed rule carried the `{document=**}` wildcard.
+> It did not. The live ruleset read:
+>
+> ```
+> match /profiles/{uid} {
+>   allow read, write: if request.auth != null && request.auth.uid == uid;
+> }
+> ```
+>
+> That matches the profile document itself and nothing beneath it, so
+> `profiles/{uid}/apps/wonder-lab` was unreachable and every cloud write from
+> Wonder Lab failed with a permission error. The app swallows that failure
+> (`console.warn('cloud push failed')`) and keeps working locally, which is why
+> it went unnoticed. The wildcard is now deployed, which fixes Wonder Lab as
+> well as unblocking Math Lab.
+
+This is what is live now:
 
 ```
 rules_version = '2';

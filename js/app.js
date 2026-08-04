@@ -649,6 +649,11 @@ const App = {
       <div class="card worked">
         <h3>Worked example</h3>
         <p class="wq">${this.esc(l.ex.q)}</p>
+        ${l.fig ? `<div id="fig">${this.figure(l.fig, 0)}</div>
+          <div class="figsteps">${l.ex.steps.map((_, i) =>
+            `<button class="figstep ${i === 0 ? 'on' : ''}" data-i="${i}"
+               onclick="App.figStep('${id}', ${i})">${i + 1}</button>`).join('')}
+            <span class="dim small">tap a step to see it</span></div>` : ''}
         <ol class="steps">${l.ex.steps.map(step).join('')}</ol>
         <p class="wa">Answer: <b>${this.esc(l.ex.a)}</b></p>
         <div style="margin-top:10px">${this.listenBtn(
@@ -672,6 +677,32 @@ const App = {
         <div style="margin-top:10px">${this.listenBtn(l.watch)}</div>
       </div>
       ${back}`);
+  },
+
+  // Draw the worked example rather than describing it. A child who has never
+  // seen column addition laid out cannot picture "write 2, carry 1" from words.
+  figure(f, step) {
+    if (!f || typeof Fig === 'undefined') return '';
+    try {
+      if (f.kind === 'column') return Fig.column(f.a, f.b, f.op, step);
+      if (f.kind === 'places') return Fig.places(f.n, f.hi);
+      if (f.kind === 'tenframe') return Fig.tenFrame(f.filled, f.extra);
+      if (f.kind === 'array') return Fig.array(f.rows, f.cols, f.grouped);
+      if (f.kind === 'bar') return Fig.bar(f.d, f.n);
+    } catch (e) { /* a broken figure must not take the lesson with it */ }
+    return '';
+  },
+
+  // Walk the highlight along the columns as the child reads each step.
+  figStep(id, i) {
+    const l = lessonFor(id);
+    const el = document.getElementById('fig');
+    if (!l || !l.fig || !el) return;
+    el.innerHTML = this.figure(l.fig, i);
+    document.querySelectorAll('.figstep').forEach(b =>
+      b.classList.toggle('on', +b.dataset.i === i));
+    document.querySelectorAll('.card.worked .steps li').forEach((li, k) =>
+      li.classList.toggle('lit', k === i));
   },
 
   // The faded step. Going straight from a worked example to a blank problem is

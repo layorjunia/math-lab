@@ -398,3 +398,18 @@ table.rep td.num { text-align: right; font-variant-numeric: tabular-nums; }
   line-height: 1.5; font-size: .96rem;
 }
 .card.turn { border-left: 3px solid var(--good); }
+
+/* Worked-example figure and its step buttons. */
+.card.worked svg { display: block; margin: 14px auto 6px; }
+.figsteps { display: flex; align-items: center; gap: 7px; margin: 4px 0 12px;
+            justify-content: center; flex-wrap: wrap; }
+.figstep {
+  font: inherit; font-weight: 800; font-size: .9rem; cursor: pointer;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--ink-3); border: 1px solid var(--line); color: var(--dim);
+}
+.figstep.on { border-color: var(--amber); color: var(--amber);
+              background: rgba(255,180,61,.14); }
+.figstep:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.card.worked .steps li.lit { color: var(--text); }
+.card.worked .steps li.lit::marker { color: var(--amber); }
