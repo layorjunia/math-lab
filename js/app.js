@@ -69,16 +69,22 @@ const App = {
   go(tab) {
     this.tab = tab;
     this.resetSay();
-    ({ today: () => this.today(), map: () => this.map(),
+    ({ today: () => this.today(), map: () => this.map(), play: () => this.play(),
+       quests: () => this.quests(),
        report: () => this.report(), parent: () => this.parent() }[tab]
       || (() => this.today()))();
     this.renderNav();
   },
 
   renderNav() {
-    const items = [['today', '🎯', 'Today'], ['map', '🗺️', 'Map'],
+    const items = [['today', '🎯', 'Today'], ['quests', '🧭', 'Quests'],
+                   ['map', '🗺️', 'Map'], ['play', '🎲', 'Play'],
                    ['report', '📈', 'Progress'], ['parent', '👋', 'Grown-ups']];
-    document.getElementById('nav').innerHTML = items.map(([k, ic, label]) =>
+    // Six destinations is one more than a thumb bar wants, so Grown-ups drops
+    // off the bar on a phone and is reached from Progress instead.
+    const onPhone = window.matchMedia('(max-width: 560px)').matches;
+    const shown = onPhone ? items.filter(i => i[0] !== 'parent') : items;
+    document.getElementById('nav').innerHTML = shown.map(([k, ic, label]) =>
       `<button class="${this.tab === k ? 'on' : ''}" onclick="App.go('${k}')">
         <span class="n-ic">${ic}</span>${label}</button>`).join('');
   },
@@ -579,6 +585,315 @@ const App = {
   },
 
   setGrade(g) { Progress.setGrade(g); this.go('map'); },
+
+
+  // ── PLAY ──
+  play() {
+    this.el(`
+      ${this.bar('Play')}
+      <p class="dim small" style="margin-bottom:12px">
+        Every one of these is built from the same problems as Today — a
+        different way of looking at them, not extra homework.</p>
+      ${Games.LIST.map(g => `<button class="card tight" style="width:100%;text-align:left;
+          cursor:pointer;border:1px solid var(--line);color:var(--text);font:inherit"
+          onclick="App.startGame('${g.id}')">
+          <h2 style="display:flex;align-items:center;gap:9px">
+            <span style="font-size:1.4rem">${g.glyph}</span>${this.esc(g.name)}</h2>
+          <p class="dim small" style="margin-top:4px">${this.esc(g.blurb)}</p>
+        </button>`).join('')}`);
+  },
+
+  startGame(id) {
+    this.game = { id, seed: (Date.now() % 100000) | 0, i: 0, right: 0, t0: Date.now() };
+    this.tab = 'play';
+    this.renderNav();
+    this.gameStep();
+  },
+
+  gameStep() {
+    const g = this.game;
+    if (!g) return this.go('play');
+    ({ bigger: () => this.gBigger(), slip: () => this.gSlip(),
+       clock: () => this.gClock(), listen: () => this.gListen() }[g.id]
+      || (() => this.go('play')))();
+  },
+
+  gameBar(title, n) {
+    return this.bar(title, `<span class="chip mono">${this.game.i + 1} / ${n}</span>
+      <button class="chiptap" onclick="App.go('play')">Stop</button>`);
+  },
+
+  gameDone(extra) {
+    const g = this.game;
+    const secs = Math.round((Date.now() - g.t0) / 1000);
+    this.el(`
+      ${this.bar('Play')}
+      <div class="card" style="text-align:center;padding:28px 18px">
+        <div style="font-size:2.6rem">${g.right >= 8 ? '🎉' : '✅'}</div>
+        <h2 style="margin-top:8px">${g.right} out of ${g.n || 10}</h2>
+        ${extra || ''}
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="btn ghost" style="flex:1" onclick="App.startGame('${g.id}')">Again</button>
+          <button class="btn" style="flex:1" onclick="App.go('play')">Done</button>
+        </div>
+      </div>`);
+    this.game = null;
+  },
+
+  // Bigger or Smaller — estimation, not calculation.
+  gBigger() {
+    const g = this.game;
+    g.n = 8;
+    if (g.i >= g.n) return this.gameDone();
+    const item = Games.bigger(g.seed + g.i * 137);
+    if (!item) return this.go('play');
+    g.cur = item;
+    this.resetSay();
+    this.el(`
+      ${this.gameBar('Bigger or Smaller', g.n)}
+      <div class="prob" style="--c:var(--md)">
+        <div class="skillname"><span class="dot"></span>Which is bigger?</div>
+        <div class="opts two" style="margin-top:16px">
+          <button class="opt" style="font-size:1.3rem;padding:22px 10px" data-side="left"
+            onclick="App.gBiggerPick('left')">${this.esc(item.left)}</button>
+          <button class="opt" style="font-size:1.3rem;padding:22px 10px" data-side="right"
+            onclick="App.gBiggerPick('right')">${this.esc(item.right)}</button>
+        </div>
+        <div id="verdict"></div>
+      </div>`);
+  },
+
+  gBiggerPick(side) {
+    const g = this.game, item = g.cur;
+    if (g.locked) return;
+    g.locked = true;
+    const ok = side === item.answer;
+    if (ok) g.right++;
+    Sfx.play(ok ? 'correct' : 'retry', ok ? 0.5 : 0.3);
+    document.querySelectorAll('.opt[data-side]').forEach(b => {
+      b.classList.add(b.dataset.side === item.answer ? 'right' : 'wrong');
+    });
+    document.getElementById('verdict').innerHTML = `
+      <div class="verdict ${ok ? 'ok' : 'no'}">
+        <h3>${ok ? 'Right' : 'The other one'}</h3>
+        <p><b>${this.esc(item.left)}</b> is ${item.lv}, <b>${this.esc(item.right)}</b> is ${item.rv}.</p>
+      </div>
+      <button class="btn wide big" style="margin-top:12px" onclick="App.gameNext()">Next</button>`;
+  },
+
+  gameNext() {
+    this.game.i++;
+    this.game.locked = false;
+    this.gameStep();
+  },
+
+  // Spot the Slip — naming somebody else's mistake.
+  gSlip() {
+    const g = this.game;
+    g.n = 6;
+    if (g.i >= g.n) return this.gameDone();
+    const item = Games.slip(g.seed + g.i * 211);
+    if (!item) return this.go('play');
+    g.cur = item;
+    this.resetSay();
+    this.el(`
+      ${this.gameBar('Spot the Slip', g.n)}
+      <div class="prob" style="--c:var(--fr)">
+        <div class="skillname"><span class="dot"></span>${this.esc(item.skill.name)}</div>
+        <div class="q ${item.q.length > 42 ? 'wordy' : ''}">${this.esc(item.q)}</div>
+        ${item.svg || ''}
+        <p style="margin-top:10px;font-size:1.15rem">
+          Somebody answered <b style="color:var(--bad)">${this.esc(item.wrong)}</b>.</p>
+        <p class="dim small" style="margin-top:4px">What did they do?</p>
+        <div class="opts" style="margin-top:12px">
+          ${item.options.map(t => `<button class="opt" data-tag="${t}"
+            style="font-size:.98rem;text-align:left"
+            onclick="App.gSlipPick('${t}')">${this.esc(ERRORS[t].name)}</button>`).join('')}
+        </div>
+        <div id="verdict"></div>
+      </div>`);
+  },
+
+  gSlipPick(tag) {
+    const g = this.game, item = g.cur;
+    if (g.locked) return;
+    g.locked = true;
+    const ok = tag === item.tag;
+    if (ok) g.right++;
+    Sfx.play(ok ? 'correct' : 'retry', ok ? 0.5 : 0.3);
+    document.querySelectorAll('.opt[data-tag]').forEach(b => {
+      if (b.dataset.tag === item.tag) b.classList.add('right');
+      else if (b.dataset.tag === tag) b.classList.add('wrong');
+    });
+    const e = ERRORS[item.tag];
+    document.getElementById('verdict').innerHTML = `
+      <div class="verdict ${ok ? 'ok' : 'no'}">
+        <h3>${this.esc(e.name)}</h3>
+        <p>${this.esc(e.say)}</p>
+        <div class="fix"><b>The step:</b> ${this.esc(e.fix)}</div>
+        <div class="fix" style="border:none;padding-top:6px">
+          It should have been <b>${this.esc(item.right)}</b>.</div>
+        <div style="margin-top:10px">${this.listenBtn(e.name, e.say, e.fix)}</div>
+      </div>
+      <button class="btn wide big" style="margin-top:12px" onclick="App.gameNext()">Next</button>`;
+  },
+
+  // Beat the Clock — against the child's own previous best, and nothing else.
+  gClock() {
+    const g = this.game;
+    g.n = 10;
+    if (!g.set) { g.set = Games.clockSet(g.seed, g.n); g.t0 = Date.now(); }
+    if (g.i >= g.set.length) {
+      const secs = Math.round((Date.now() - g.t0) / 1000);
+      const key = 'g' + Progress.p.grade;
+      const best = (Progress.p.bestTime || {})[key];
+      const beat = g.right >= 8 && (!best || secs < best);
+      if (beat) {
+        Progress.p.bestTime = Progress.p.bestTime || {};
+        Progress.p.bestTime[key] = secs;
+        Progress.commit();
+        Sfx.play('fanfare', 0.5);
+      }
+      return this.gameDone(`
+        <p style="margin-top:8px;font-size:1.1rem">${secs} seconds</p>
+        ${best ? `<p class="dim small" style="margin-top:4px">
+            ${beat ? `Your best was ${best}. That is ${best - secs} seconds quicker.`
+                   : `Your best is still ${best} seconds.`}</p>`
+          : (g.right >= 8 ? '<p class="dim small" style="margin-top:4px">That is your first time — the one to beat.</p>'
+                          : '<p class="dim small" style="margin-top:4px">Get eight right to set a time.</p>')}`);
+    }
+    const { skill, p } = g.set[g.i];
+    g.cur = { skill, p };
+    this.resetSay();
+    const secs = Math.round((Date.now() - g.t0) / 1000);
+    this.el(`
+      ${this.gameBar('Beat the Clock', g.n)}
+      <div class="prob" style="--c:var(--as)">
+        <div class="skillname"><span class="dot"></span><span class="mono">${secs}s</span></div>
+        <div class="q">${this.esc(p.q)}</div>
+        ${p.svg || ''}
+        ${p.fmt === 'choice'
+          ? `<div class="opts ${p.options.length <= 3 ? 'two' : ''}">
+              ${p.options.map((o, i) => `<button class="opt"
+                onclick="App.gClockPick(${i})">${this.esc(o)}</button>`).join('')}</div>`
+          : `<div class="ansrow" style="margin-top:14px">
+              <input class="ans" id="a1" inputmode="numeric" readonly value=""></div>
+             ${this.pad(p)}`}
+      </div>`);
+    this.typed = ''; this.typed2 = '';
+  },
+
+  gClockPick(i) {
+    const g = this.game;
+    const ok = g.cur.p.options[i] === g.cur.p.a;
+    if (ok) g.right++;
+    Progress.record(g.cur.skill.id, ok, null);
+    Sfx.play(ok ? 'correct' : 'retry', ok ? 0.4 : 0.25);
+    g.i++;
+    this.gClock();
+  },
+
+  // Listen Up — the only screen where the audio IS the question.
+  gListen() {
+    const g = this.game;
+    g.n = 8;
+    if (g.i >= g.n) return this.gameDone();
+    const item = Games.listen(g.seed + g.i * 313);
+    g.cur = item;
+    this.resetSay();
+    const i = this._sayReg.push({ parts: item.parts }) - 1;
+    this.el(`
+      ${this.gameBar('Listen Up', g.n)}
+      <div class="prob" style="--c:var(--da)">
+        <div class="skillname"><span class="dot"></span>Which number did you hear?</div>
+        <button class="btn big wide" style="margin-top:16px" onclick="App.say(${i})">
+          ▶  Play it again</button>
+        <div class="opts two" style="margin-top:14px">
+          ${item.options.map(o => `<button class="opt" data-n="${o}"
+            style="font-size:1.3rem" onclick="App.gListenPick(${o})">${o}</button>`).join('')}
+        </div>
+        <div id="verdict"></div>
+      </div>`);
+    setTimeout(() => this.say(i), 350);
+  },
+
+  gListenPick(n) {
+    const g = this.game, item = g.cur;
+    if (g.locked) return;
+    g.locked = true;
+    const ok = n === item.n;
+    if (ok) g.right++;
+    Sfx.play(ok ? 'correct' : 'retry', ok ? 0.5 : 0.3);
+    document.querySelectorAll('.opt[data-n]').forEach(b => {
+      if (+b.dataset.n === item.n) b.classList.add('right');
+      else if (+b.dataset.n === n) b.classList.add('wrong');
+    });
+    document.getElementById('verdict').innerHTML = `
+      <div class="verdict ${ok ? 'ok' : 'no'}">
+        <h3>${ok ? 'Right' : 'It was ' + item.n}</h3>
+      </div>
+      <button class="btn wide big" style="margin-top:12px" onclick="App.gameNext()">Next</button>`;
+  },
+
+  // ── QUESTS ──
+  quests() {
+    this.resetSay();
+    this.el(`
+      ${this.bar('Quests')}
+      <p class="dim small" style="margin-bottom:12px">
+        Short routes through the map, each with a reason. Everything on a quest
+        is a skill you can practise on its own — the quest is the order, and why.</p>
+      ${QUESTS.map(q => {
+        const stops = questStops(q);
+        const done = stops.filter(st =>
+          ['mastered', 'stale'].includes(Progress.state(st.s))).length;
+        return `<button class="card tight" style="width:100%;text-align:left;cursor:pointer;
+            color:var(--text);font:inherit;border-left:3px solid var(--${q.tint})"
+            onclick="App.openQuest('${q.id}')">
+            <h2 style="display:flex;align-items:center;gap:9px">
+              <span style="font-size:1.3rem">${q.glyph}</span>${this.esc(q.name)}
+              <span class="mono small dim" style="margin-left:auto">${done}/${stops.length}</span></h2>
+            <p class="dim small" style="margin-top:4px">${this.esc(q.intro)}</p>
+            <div class="meter" style="margin-top:9px">
+              <i class="mastered" style="width:${stops.length ? done / stops.length * 100 : 0}%"></i>
+            </div>
+          </button>`;
+      }).join('')}`);
+  },
+
+  openQuest(id) {
+    const q = QUESTS.find(x => x.id === id);
+    if (!q) return this.go('quests');
+    const stops = questStops(q);
+    this.resetSay();
+    this.el(`
+      ${this.bar(q.glyph + ' ' + this.esc(q.name),
+        `<button class="chiptap" onclick="App.go('quests')">Back</button>`)}
+      <div class="card" style="border-left:3px solid var(--${q.tint})">
+        <p>${this.esc(q.intro)}</p>
+        <div style="margin-top:10px">${this.listenBtn(q.intro)}</div>
+      </div>
+      ${stops.map((st, i) => {
+        const s = SKILL[st.s];
+        const state = Progress.state(st.s);
+        const done = ['mastered', 'stale'].includes(state);
+        return `<div class="card tight" style="border-left:3px solid var(--${s.s})">
+          <p class="small dim" style="display:flex;align-items:center;gap:7px">
+            <span class="mono">${i + 1}</span>
+            <span class="pip" style="width:8px;height:8px;border-radius:50%;
+              background:${done ? 'var(--good)' : state === 'known' ? 'var(--amber)' : 'var(--line-2)'}"></span>
+            ${this.esc(STRANDS[s.s].name)}</p>
+          <h3 style="margin-top:5px">${this.esc(s.name)}</h3>
+          <p class="dim small" style="margin-top:4px;font-style:italic">${this.esc(st.note)}</p>
+          <button class="btn ghost wide" style="margin-top:10px"
+            onclick="App.practise('${st.s}')">${done ? 'Practise again' : 'Practise this'}</button>
+        </div>`;
+      }).join('')}
+      <div class="card">
+        <p>${this.esc(q.outro)}</p>
+        <div style="margin-top:10px">${this.listenBtn(q.outro)}</div>
+      </div>`);
+  },
 
   // ── REPORT (the child's own) ──
   report() {

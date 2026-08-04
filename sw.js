@@ -4,7 +4,8 @@ const CACHE = 'mathlab-20260804-1052-5628f14';
 const SHELL = [
   '.', 'index.html', 'css/style.css', 'manifest.json',
   'js/schema.js', 'js/skills.js', 'js/numspeak.js', 'js/generators.js',
-  'js/manipulatives.js', 'js/store.js', 'js/audio.js', 'js/app.js',
+  'js/manipulatives.js', 'js/ui-speech.js', 'js/games.js',
+  'js/store.js', 'js/audio.js', 'js/app.js',
   // Same-origin only when the app itself is on Pages. On Vercel the manifest
   // lives on the audio origin, so it is fetched and cached at runtime by the
   // cross-origin branch below; the player awaits its own fetch either way.

@@ -181,7 +181,7 @@ GEN['npv.teens'] = r => {
 GEN['npv.count120'] = r => {
   const n = G.ri(r, 20, 118), step = G.pick(r, [1, 1, 2, 10]);
   return { q: `Count on ${step} from ${n}. What number do you land on?`, fmt: 'number',
-           a: n + step, d: n, hint: `Start at ${n} and count ${step} more.`,
+           a: n + step, d: n, hint: 'Start at the number you are given and count on.',
            slips: G.slips(n + step, [{ v: n - step, tag: 'op.swapped' },
                                      { v: n + step + 1, tag: 'count.off1' }]) };
 };
@@ -210,7 +210,7 @@ GEN['npv.skip'] = r => {
   const start = step * G.ri(r, 1, Math.floor(180 / step));
   return { q: `Skip count by ${step}s: ${start}, ${start + step}, ${start + 2 * step}, ▢`,
            fmt: 'number', a: start + 3 * step, d: start,
-           hint: `Each jump adds ${step}.`,
+           hint: 'Every jump adds the same amount. Work out what that amount is.',
            slips: G.slips(start + 3 * step,
              [{ v: start + 2 * step + 1, tag: 'count.off1' },
               { v: start + 4 * step, tag: 'count.off1' }]) };
@@ -306,7 +306,7 @@ GEN['npv.round.any'] = r => {
   const down = Math.floor(n / pow) * pow;
   return { q: `Round ${n.toLocaleString('en-US')} to the nearest ${names[pow]}.`,
            fmt: 'number', a, d: pow,
-           hint: `Underline the ${names[pow]} place, then look at the digit to its right.`,
+           hint: 'Underline the place you are rounding to, then look at the digit to its right.',
            slips: G.slips(a, [{ v: a === down ? down + pow : down, tag: 'round.wrongway' },
                               { v: Math.round(n / (pow * 10)) * pow * 10, tag: 'round.wrongplace' }]) };
 };
@@ -322,7 +322,7 @@ GEN['npv.powers10'] = r => {
              slips: G.slips(n * 10, [{ v: n, tag: 'pv.digit' }, { v: n * 100, tag: 'pv.digit' }]) };
   }
   return { q: `What is 10${'⁰¹²³⁴⁵⁶'[k]} as a number?`, fmt: 'number', a: Math.pow(10, k), d: k,
-           hint: `10 to the power ${k} is 1 followed by ${k} zeros.`,
+           hint: 'A power of ten is a one followed by that many zeros.',
            slips: G.slips(Math.pow(10, k), [{ v: 10 * k, tag: 'exp.multiplied' },
                                             { v: Math.pow(10, k - 1), tag: 'count.off1' }]) };
 };
@@ -354,7 +354,7 @@ GEN['npv.exponents'] = r => {
   const base = G.ri(r, 2, 12), k = G.ri(r, 0, 5);
   const a = Math.pow(base, k);
   return { q: `What is ${base}${'⁰¹²³⁴⁵'[k]} ?`, fmt: 'number', a, d: a,
-           hint: `${base} to the power ${k} means ${k} copies of ${base} multiplied together.`,
+           hint: 'The small raised number tells you how many copies to multiply together.',
            slips: G.slips(a, [{ v: base * k, tag: 'exp.multiplied' },
                               { v: Math.pow(base, Math.max(0, k - 1)), tag: 'count.off1' }]) };
 };
@@ -470,7 +470,7 @@ const factGen = tables => r => {
   const flip = r() < 0.5;
   const [a, b] = flip ? [o, t] : [t, o];
   return { q: `${a} × ${b} = ▢`, fmt: 'number', a: a * b, d: a * b,
-           hint: `${a} groups of ${b}.`,
+           hint: 'Think of it as that many groups, each the same size.',
            slips: G.slips(a * b, [{ v: a * b + t, tag: 'fact.near' },
                                   { v: Math.max(0, a * b - t), tag: 'fact.near' },
                                   { v: a + b, tag: 'op.swapped' }]) };
@@ -501,7 +501,7 @@ GEN['md.props'] = r => {
 GEN['md.div.f'] = r => {
   const d = G.ri(r, 1, 12), q = G.ri(r, 1, 12);
   return { q: `${d * q} ÷ ${d} = ▢`, fmt: 'number', a: q, d: d * q,
-           hint: `How many ${d}s fit into ${d * q}?`,
+           hint: 'How many of the smaller number fit into the bigger one?',
            slips: G.slips(q, [{ v: d, tag: 'op.invert' }, { v: d * q, tag: 'op.invert' },
                               { v: q + 1, tag: 'fact.near' }]) };
 };
@@ -520,7 +520,7 @@ GEN['md.div.rules'] = r => {
   }
   return { q: `What is ${n} ÷ 0 ?`, fmt: 'choice',
            options: ['0', String(n), 'It has no answer'], a: 'It has no answer', d: n,
-           hint: 'How many groups of nothing make ' + n + '? You could take groups of nothing forever.',
+           hint: 'How many groups of nothing would you need? You could take groups of nothing forever and never get there.',
            slips: G.slips('It has no answer', [{ v: '0', tag: 'op.invert' },
                                                { v: String(n), tag: 'op.invert' }]) };
 };
@@ -638,7 +638,7 @@ GEN['md.orderops'] = r => {
 GEN['fr.equiv'] = r => {
   const d = G.ri(r, 2, 12), n = G.ri(r, 1, d - 1), k = G.ri(r, 2, 4);
   return { q: `${n}/${d} = ▢/${d * k}`, fmt: 'number', a: n * k, d: d,
-           hint: `The bottom was multiplied by ${k}, so the top must be too.`,
+           hint: 'Whatever the bottom was multiplied by, the top must be multiplied by too.',
            slips: G.slips(n * k, [{ v: n + k, tag: 'frac.commondenom' },
                                   { v: n, tag: 'frac.commondenom' }]) };
 };
@@ -658,7 +658,7 @@ GEN['fr.cmp.same'] = r => {
 GEN['fr.whole'] = r => {
   const d = G.ri(r, 2, 12), w = G.ri(r, 1, 5);
   return { q: `How many ${d}ths make ${w === 1 ? '1 whole' : w + ' wholes'}?`, fmt: 'number',
-           a: d * w, d: d * w, hint: `Each whole takes ${d} of them.`,
+           a: d * w, d: d * w, hint: 'Each whole one takes as many pieces as the bottom number says.',
            slips: G.slips(d * w, [{ v: d, tag: 'count.off1' }, { v: d + w, tag: 'frac.commondenom' }]) };
 };
 
@@ -742,7 +742,7 @@ GEN['fr.mult.frac'] = r => {
 GEN['fr.div.unit'] = r => {
   const d = G.ri(r, 2, 12), w = G.ri(r, 2, 12);
   return { q: `${w} ÷ 1/${d} = ▢`, fmt: 'number', a: w * d, d: w * d,
-           hint: `How many ${d}ths fit into ${w} wholes?`,
+           hint: 'How many of those fraction pieces fit into the whole ones?',
            slips: G.slips(w * d, [{ v: Math.round(w / d) === w / d ? w / d : null, tag: 'frac.invert' },
                                   { v: w + d, tag: 'op.swapped' }]) };
 };
@@ -841,7 +841,7 @@ GEN['dp.percent.of'] = r => {
   const step = 100 / G.gcd(p, 100);
   const n = step * G.ri(r, 1, Math.floor(1000 / step));
   return { q: `What is ${p}% of ${n}?`, fmt: 'number', a: n * p / 100, d: n,
-           hint: `${p}% means ${p} hundredths. Find one hundredth first, then take ${p} of them.`,
+           hint: 'Percent means hundredths. Find one hundredth first, then take that many.',
            slips: G.slips(n * p / 100, [{ v: n * p, tag: 'dec.places' },
                                         { v: Math.round(n / p), tag: 'op.invert' }]) };
 };
@@ -850,7 +850,7 @@ GEN['dp.ratio'] = r => {
   const a = G.ri(r, 1, 12), b = G.ri(r, 1, 12), k = G.ri(r, 2, 8);
   if (a * k > 100 || b * k > 100) return GEN['dp.ratio'](r);
   return { q: `${a} : ${b}  =  ${a * k} : ▢`, fmt: 'number', a: b * k, d: a * b,
-           hint: `The first part was multiplied by ${k}. Do the same to the second.`,
+           hint: 'Work out what the first part was multiplied by, then do the same to the second.',
            slips: G.slips(b * k, [{ v: b + k, tag: 'frac.commondenom' },
                                   { v: b, tag: 'frac.commondenom' }]) };
 };
@@ -873,7 +873,7 @@ GEN['mt.capacity'] = r => {
   const [small, big, k] = G.pick(r, table);
   const n = G.ri(r, 1, 8);
   return { q: `How many ${small} are in ${n} ${n === 1 ? big : big + 's'}?`, fmt: 'number',
-           a: n * k, d: n * k, hint: `One ${big} is ${k} ${small}.`,
+           a: n * k, d: n * k, hint: 'Start from how many of the smaller unit make one of the bigger.',
            slips: G.slips(n * k, [{ v: n, tag: 'unit.mixed' },
                                   { v: Math.round(n / k) || 1, tag: 'unit.direction' }]) };
 };
@@ -887,13 +887,13 @@ GEN['mt.convert'] = r => {
   if (down) {
     const n = G.ri(r, 2, 12);
     return { q: `${n} ${big}s = ▢ ${small}`, fmt: 'number', a: n * k, d: n * k,
-             hint: `Going to a smaller unit gives more of them, so multiply by ${k}.`,
+             hint: 'Going to a smaller unit gives you more of them, so multiply.',
              slips: G.slips(n * k, [{ v: Math.round(n / k) || 1, tag: 'unit.direction' },
                                     { v: n + k, tag: 'unit.mixed' }]) };
   }
   const m = G.ri(r, 2, 12);
   return { q: `${m * k} ${small} = ▢ ${big}s`, fmt: 'number', a: m, d: m * k,
-           hint: `Going to a bigger unit gives fewer of them, so divide by ${k}.`,
+           hint: 'Going to a bigger unit gives you fewer of them, so divide.',
            slips: G.slips(m, [{ v: m * k * k, tag: 'unit.direction' },
                               { v: m * k, tag: 'unit.direction' }]) };
 };
@@ -992,7 +992,7 @@ GEN['alg.express'] = r => {
   const v = plus ? a * x + b : a * x - b;
   if (v < 0) return GEN['alg.express'](r);
   return { q: `If n = ${x}, what is ${a}n ${plus ? '+' : '−'} ${b}?`, fmt: 'number', a: v, d: v,
-           hint: `${a}n means ${a} times n. Multiply before you add or subtract.`,
+           hint: 'A number written against a letter means multiply. Do that before adding or subtracting.',
            slips: G.slips(v, [{ v: plus ? (a + x) * 1 + b : a + x - b, tag: 'ops.leftright' },
                               { v: plus ? a * (x + b) : a * (x - b), tag: 'ops.leftright' }]) };
 };
@@ -1002,13 +1002,13 @@ GEN['alg.solve1'] = r => {
   if (kind === 'add') {
     const a = G.ri(r, 1, 50), x = G.ri(r, 1, 50);
     return { q: `Solve:   x + ${a} = ${x + a}`, fmt: 'number', a: x, d: x + a,
-             hint: `Take ${a} off both sides.`,
+             hint: 'Take the same amount off both sides.',
              slips: G.slips(x, [{ v: x + a + a, tag: 'op.swapped' },
                                 { v: x + a, tag: 'unknown' }]) };
   }
   const a = G.ri(r, 2, 12), x = G.ri(r, 2, 12);
   return { q: `Solve:   ${a}x = ${a * x}`, fmt: 'number', a: x, d: a * x,
-           hint: `Divide both sides by ${a}.`,
+           hint: 'Divide both sides by the number in front of the letter.',
            slips: G.slips(x, [{ v: a * x * a, tag: 'op.invert' },
                               { v: a * x - a, tag: 'op.swapped' }]) };
 };

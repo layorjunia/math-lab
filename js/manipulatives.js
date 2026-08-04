@@ -288,7 +288,7 @@ const S = {
     const g = ri(r, 2, 5), each = ri(r, 2, 10);
     return { q: `${g} groups of ${each}. How many altogether?`, fmt: 'number',
              svg: dots(g, each, true), a: g * each, d: g * each,
-             hint: `Add ${each} to itself ${g} times, or count them all.`,
+             hint: 'Add the same number once for every group, or count them all.',
              slips: G.slips(g * each, [{ v: g + each, tag: 'op.swapped' },
                                        { v: g * each - each, tag: 'count.off1' }]) };
   };
@@ -681,7 +681,7 @@ const S = {
     const w = ri(r, 0, 3);
     return { q: `Each picture stands for ${scale}. How many ${LABELS[w].toLowerCase()}?`,
              fmt: 'number', svg: pictograph(counts, scale), a: counts[w], d: counts[w],
-             hint: `Count the pictures in that row, then multiply by ${scale}.`,
+             hint: 'Count the pictures in that row, then multiply by what each one stands for.',
              slips: G.slips(counts[w], [{ v: counts[w] / scale, tag: 'unit.direction' },
                                         { v: counts[w] + scale, tag: 'count.off1' }]) };
   };
