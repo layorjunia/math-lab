@@ -115,11 +115,36 @@ const G = {
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
   },
   // Distinct, plausible, and never accidentally equal to the right answer.
+  //
+  // "Never equal" has to mean equal in VALUE, not just equal as a JSON blob.
+  // fr.numline builds an "inverted fraction" slip as {n:d, d:n}; when the point
+  // lands on a whole number that is 2/2 against an answer of 1/1 — different
+  // objects, same value — and a child who typed the right answer would have
+  // been told they inverted the fraction.
+  //
+  // The single exception is `frac.simplify`, whose whole meaning is "correct
+  // value, not in lowest terms". There the equal value IS the mistake, and the
+  // form has to differ instead.
+  _val(v) {
+    if (v && typeof v === 'object') {
+      if ('n' in v && 'd' in v) return v.d ? v.n / v.d : NaN;
+      if ('v' in v && 'dp' in v) return v.v / Math.pow(10, v.dp);
+    }
+    return NaN;
+  },
   slips(a, list) {
     const out = [], seen = new Set([JSON.stringify(a)]);
+    const aVal = G._val(a);
     list.forEach(s => {
+      if (s.v === null || s.v === undefined) return;
       const k = JSON.stringify(s.v);
-      if (!seen.has(k) && s.v !== null && s.v !== undefined) { seen.add(k); out.push(s); }
+      if (seen.has(k)) return;
+      if (s.tag !== 'frac.simplify' && !Number.isNaN(aVal)) {
+        const sVal = G._val(s.v);
+        if (!Number.isNaN(sVal) && sVal === aVal) return;
+      }
+      seen.add(k);
+      out.push(s);
     });
     return out;
   },

@@ -270,12 +270,15 @@ const App = {
           <input class="ans small" id="a2" inputmode="numeric" readonly value="${this.esc(this.typed2)}">
         </div></div>`;
     }
-    if (prob.fmt === 'quotrem') {
-      return `<div class="ansrow" style="margin-top:14px">
+    if (prob.fmt === 'quotrem' || prob.fmt === 'coord') {
+      const sep = prob.fmt === 'coord' ? ',' : 'r';
+      const lead = prob.fmt === 'coord' ? '<span class="slash">(</span>' : '';
+      const tail = prob.fmt === 'coord' ? '<span class="slash">)</span>' : '';
+      return `<div class="ansrow" style="margin-top:14px">${lead}
         <input class="ans small" id="a1" inputmode="numeric" readonly value="${this.esc(this.typed)}">
-        <span class="slash small dim">r</span>
+        <span class="slash small dim">${sep}</span>
         <input class="ans small" id="a2" inputmode="numeric" readonly value="${this.esc(this.typed2)}">
-      </div>`;
+        ${tail}</div>`;
     }
     const prefix = prob.fmt === 'money' ? '<span class="slash">$</span>' : '';
     return `<div class="ansrow" style="margin-top:14px">${prefix}
@@ -287,8 +290,9 @@ const App = {
   pad(prob) {
     if (prob.fmt === 'choice' || prob.fmt === 'multi') return '';
     const dec = ['decimal1', 'decimal2', 'decimal4', 'money'].includes(prob.fmt);
-    const two = ['fraction', 'quotrem'].includes(prob.fmt);
-    const neg = ['as.integers', 'npv.abs', 'npv.integers'].includes(this.cur.skill.id);
+    const two = ['fraction', 'quotrem', 'coord'].includes(prob.fmt);
+    const neg = ['as.integers', 'npv.abs', 'npv.integers', 'geo.coord4']
+      .includes(this.cur.skill.id);
     const extra = dec ? '.' : (neg ? '−' : (two ? '↹' : ''));
     return `<div class="keys">
       ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n =>
@@ -302,7 +306,7 @@ const App = {
 
   k(ch) {
     if (this.answered) return;
-    const two = ['fraction', 'quotrem'].includes(this.cur.p.fmt);
+    const two = ['fraction', 'quotrem', 'coord'].includes(this.cur.p.fmt);
     if (ch === '↹') { this.focus2 = !this.focus2; return this.repaintAns(); }
     const key = (two && this.focus2) ? 'typed2' : 'typed';
     if (ch === 'del') this[key] = this[key].slice(0, -1);
@@ -341,6 +345,10 @@ const App = {
       if (!/^-?\d+$/.test(t) || !/^\d+$/.test(t2)) return null;
       return { q: +t, rem: +t2 };
     }
+    if (fmt === 'coord') {
+      if (!/^-?\d+$/.test(t) || !/^-?\d+$/.test(t2)) return null;
+      return { x: +t, y: +t2 };
+    }
     if (fmt === 'money') {
       const m = t.match(/^(\d+)(?:\.(\d{1,2}))?$/);
       if (!m) return null;
@@ -366,6 +374,7 @@ const App = {
         return a.n * b.d === b.n * a.d;
       }
       if ('q' in a && 'q' in b) return a.q === b.q && a.rem === b.rem;
+      if ('x' in a && 'x' in b) return a.x === b.x && a.y === b.y;
       if ('v' in a && 'v' in b) return a.v * Math.pow(10, b.dp) === b.v * Math.pow(10, a.dp);
       return false;
     }
@@ -445,6 +454,7 @@ const App = {
     if (a && typeof a === 'object') {
       if ('n' in a) return `${a.n}/${a.d}`;
       if ('q' in a) return `${a.q} remainder ${a.rem}`;
+      if ('x' in a) return `(${a.x}, ${a.y})`;
       if ('v' in a) return G.dec(a.v, a.dp);
     }
     if (fmt === 'money') return G.money(a);
