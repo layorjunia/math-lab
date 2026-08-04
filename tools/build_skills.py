@@ -71,19 +71,19 @@ def check(data):
 
     # Cycles. A child can never reach a skill inside one.
     WHITE, GREY, BLACK = 0, 1, 2
-    colour = {i: WHITE for i in by}
+    color = {i: WHITE for i in by}
 
     def visit(i, stack):
-        if colour[i] == GREY:
+        if color[i] == GREY:
             problems.append('cycle: ' + ' -> '.join(stack[stack.index(i):] + [i]))
             return
-        if colour[i] == BLACK:
+        if color[i] == BLACK:
             return
-        colour[i] = GREY
+        color[i] = GREY
         for p in by[i]['pre']:
             if p in by:
                 visit(p, stack + [i])
-        colour[i] = BLACK
+        color[i] = BLACK
 
     for i in list(by):
         visit(i, [])

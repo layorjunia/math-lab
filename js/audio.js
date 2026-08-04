@@ -32,7 +32,7 @@ const AUDIO_BASE = (function () {
 })();
 
 const AudioLib = {
-  manifest: null,      // { words: {normalised text -> file}, engine, voice }
+  manifest: null,      // { words: {normalized text -> file}, engine, voice }
   ready: false,
   _current: null,
   _queueToken: 0,

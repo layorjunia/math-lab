@@ -15,11 +15,11 @@ actually runs.
 TWO KINDS OF CLIP, and the difference is the whole point of this file:
 
   PROSE — a hint, an error explanation, a skill name, a UI line. Fixed, finite,
-  one clip each, keyed by the normalised text as DISPLAYED. Rendered once and
+  one clip each, keyed by the normalized text as DISPLAYED. Rendered once and
   trusted: Piper is reliable on connected speech.
 
   SHORT WORDS — the number vocabulary. "three", "six", "forty", "plus". These
-  are what a maths app is made of and they are exactly where Piper drifts,
+  are what a math app is made of and they are exactly where Piper drifts,
   because the model has almost no context to condition on. MEASURED on this
   voice before writing this file: rendered in isolation, "three" came back as
   "FREE!" and "six" as "Sex."; re-rolled across the six documented length_scale
@@ -81,6 +81,7 @@ const load = f => { const s = fs.readFileSync(f, 'utf8')
   .replace(/^const (\w+)/gm, 'globalThis.$1'); eval(s); };
 load('js/schema.js'); load('js/skills.js'); load('js/numspeak.js');
 load('js/generators.js'); load('js/manipulatives.js'); load('js/ui-speech.js');
+load('js/lessons.js');
 
 const prose = new Set(), add = t => { if (t && String(t).trim()) prose.add(String(t)); };
 
@@ -91,6 +92,16 @@ Object.values(GRADES).forEach(v => add(v.name));
 // wrong, and the one step that fixes it.
 Object.values(ERRORS).forEach(e => { add(e.name); add(e.say); add(e.fix); });
 UI_PHRASES.forEach(add);
+
+// The lessons. This is the largest and most important prose in the app — the
+// idea, the method, the worked example and the trap — and it is all authored
+// literals, so every line of it can have a clip.
+Object.values(LESSONS).forEach(l => {
+  add(l.idea);
+  (l.steps || []).forEach(add);
+  if (l.ex) { add(l.ex.q); (l.ex.steps || []).forEach(add); }
+  add(l.watch);
+});
 
 // Hints and fixed question text are literals inside the generators, so the only
 // honest way to enumerate them is to run the generators. Anything that varies

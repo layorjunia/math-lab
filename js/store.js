@@ -1,6 +1,6 @@
 // Progress, saved locally per profile.
 //
-// Wonder Lab's mechanic, with two changes that matter for maths.
+// Wonder Lab's mechanic, with two changes that matter for math.
 //
 // 1. MASTERY NEEDS AN ACCURACY FLOOR, not just two right answers on two days.
 //    The two-day rule is what stops mastery being farmed in one sitting and it
@@ -296,7 +296,7 @@ const Progress = {
     // Day one at grade 1 has only the handful of root skills unlocked, which is
     // the ladder behaving correctly but makes for a thin deck. Look one step
     // ahead: a skill whose only unmet prerequisites are already in this deck is
-    // fair game today, because they will have been practised by the time it
+    // fair game today, because they will have been practiced by the time it
     // comes up.
     if (chosen.length < DECK.minSkills) {
       const reachable = pool.filter(s => GEN[s.id] && st(s.id) === 'unseen'

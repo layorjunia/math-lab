@@ -34,11 +34,11 @@ UNITS = {
     'lb': ('pound', 'pounds'),     'oz': ('ounce', 'ounces'),
     'mi': ('mile', 'miles'),       'mph': ('mile an hour', 'miles an hour'),
     'yd': ('yard', 'yards'),
-    'm': ('metre', 'metres'),      'cm': ('centimetre', 'centimetres'),
-    'mm': ('millimetre', 'millimetres'), 'km': ('kilometre', 'kilometres'),
+    'm': ('meter', 'meters'),      'cm': ('centimeter', 'centimeters'),
+    'mm': ('millimeter', 'millimeters'), 'km': ('kilometer', 'kilometers'),
     'kg': ('kilogram', 'kilograms'), 'g': ('gram', 'grams'),
     'hz': ('hertz', 'hertz'),      'khz': ('kilohertz', 'kilohertz'),
-    'km/h': ('kilometre an hour', 'kilometres an hour'),
+    'km/h': ('kilometer an hour', 'kilometers an hour'),
     'mi/h': ('mile an hour', 'miles an hour'),
     'db': ('decibel', 'decibels'),
     'tonne': ('tonne', 'tonnes'),  'ton': ('ton', 'tons'),
@@ -65,7 +65,7 @@ DECADE_WORD = {0: 'hundreds', 20: 'twenties', 30: 'thirties', 40: 'forties',
                90: 'nineties', 10: 'tens'}
 
 # A conversion in brackets is a reading aid, not something to say aloud. The
-# app is imperial-first; speaking "forty-three feet, thirteen metres" doubles
+# app is imperial-first; speaking "forty-three feet, thirteen meters" doubles
 # every measurement in the ear for no gain. 507 of the 993 digit-bearing
 # strings carry one of these.
 #

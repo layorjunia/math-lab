@@ -2,7 +2,7 @@
 //
 // Wonder Lab has ~3,900 fixed strings, so every string is one clip and
 // stitching is banned: prose assembled from word clips sounds like a list being
-// read. Maths cannot work that way. "347 + 288" is one of millions of
+// read. Math cannot work that way. "347 + 288" is one of millions of
 // expressions and can never have its own recording.
 //
 // So the corpus is split. Prose is one clip per string, exactly like Wonder
@@ -19,7 +19,7 @@
 //
 // US reading throughout: "three hundred forty-seven", no "and". In American
 // usage "and" is the decimal point — "three and seven tenths" — so putting it
-// in a whole number teaches the wrong thing in a maths app.
+// in a whole number teaches the wrong thing in a math app.
 //
 // THIS FILE HAS A PYTHON TWIN, tools/numspeak.py, and they must agree string
 // for string. The generator renders whatever the Python says; the app looks up
@@ -86,7 +86,7 @@ const NumSpeak = {
   },
 
   // Digits after the point are read one at a time. "point seventy-five" is the
-  // single most common way for a maths app to teach a child to misread a
+  // single most common way for a math app to teach a child to misread a
   // decimal, so it is structurally impossible here.
   decimal(v, dp) {
     const neg = v < 0;
@@ -146,11 +146,31 @@ const NumSpeak = {
     '▢': 'what',
   },
 
-  // Read a displayed question aloud. Anything the composer cannot name is
-  // dropped rather than guessed at — tools/audit_resolve.py then fails the
-  // build on the gap, which is how a missing word gets noticed at build time
-  // instead of in a child's ear.
+  // Is this text an EXPRESSION — numbers, operators and nothing else?
+  //
+  // This guard exists because expr() used to be handed whole prose questions.
+  // Its catch-all word branch then emitted one part per word and the player
+  // spoke them separately with a gap between each: "in. twenty-two. how. many.
+  // ones. are. there." That is precisely the stitched-prose failure RULE 8
+  // forbids, and it sounded exactly as bad as the rule says it does.
+  //
+  // Prose gets its own whole recording or no Listen button. Never both halves.
+  isExpr(text) {
+    const t = String(text).replace(/[\s,()]/g, '');
+    if (!/\d/.test(t)) return false;
+    // Only digits, operators, comparison signs, the answer blank, and the few
+    // letter-free symbols an expression is allowed to contain.
+    return /^[-\d.\/$%:+×÷x*=><≥≤−▢]+$/.test(t);
+  },
+
+  // Read a displayed EXPRESSION aloud. Returns [] for anything that is not one,
+  // so a caller cannot accidentally get prose back word by word.
   expr(text) {
+    if (!this.isExpr(text)) return [];
+    return this.exprParts(text);
+  },
+
+  exprParts(text) {
     const out = [];
     // Longest tokens first: a mixed number and a fraction both start with a
     // digit, and 2 1/2 must not be read as "two, one, divided by, two".

@@ -1,6 +1,6 @@
 # Math Lab
 
-Maths from first grade to sixth, for the homeschool suite. A skill map, a finite
+Math from first grade to sixth, for the homeschool suite. A skill map, a finite
 daily deck, four games, and — the point of the whole thing — an app that **names
 the mistake** instead of marking the answer wrong.
 
@@ -81,7 +81,7 @@ composed vocabulary: every integer 0–1,000 is a whole clip, and larger numbers
 and expressions are assembled from them by `numspeak.js`, because "347 + 288" is
 one of millions of strings and can never have a recording of its own.
 
-Short words are where this voice drifts, and a maths app is made of short words.
+Short words are where this voice drifts, and a math app is made of short words.
 Measured before the pipeline was written: rendered in isolation, *three* came
 back as "FREE!" and *six* as "Sex."; across the six documented rates, *three*
 was wrong on three draws in six. So every short clip is rendered, listened to
@@ -94,7 +94,7 @@ with faster-whisper, and re-rolled until it transcribes back correctly.
 
 Playback is **opt-in per block** — a Listen button, never automatic. There is one
 exception, off by default and remembered per profile: "read each problem out
-loud", for a child who reads less easily than they do maths.
+loud", for a child who reads less easily than they do math.
 
 ## Rules that bite
 

@@ -12,7 +12,7 @@ What is checked, per draw:
      integer and Fraction arithmetic, ignoring what the generator claimed. If
      they disagree, the generator is wrong. This one check is worth the file.
   2. No floats anywhere in the answer. `0.1 + 0.2` is 0.30000000000000004 and a
-     maths app that ships that is worse than no maths app.
+     math app that ships that is worse than no math app.
   3. Every named-mistake slip is distinct, is not equal to the right answer, and
      carries a tag that actually exists in ERRORS. A slip equal to the answer
      would mark a correct child wrong.
@@ -57,7 +57,9 @@ if (fs.existsSync('js/manipulatives.js')) load('js/manipulatives.js');
 
 const draws = Number(process.argv[2]);
 const only  = process.argv[3] || '';
-const out = { errors: Object.keys(ERRORS), skills: {}, missing: [], rows: [] };
+const out = { errors: Object.keys(ERRORS), skills: {}, missing: [], rows: [],
+              tagStrands: Object.fromEntries(
+                Object.entries(ERRORS).map(([k, v]) => [k, v.strands || null])) };
 
 SKILLS.forEach(s => {
   if (only && s.id !== only) return;
@@ -71,7 +73,7 @@ SKILLS.forEach(s => {
     let again;
     try { again = GEN[s.id](mulberry32(i * 7919 + 13)); } catch (e) { again = null; }
     const same = again && JSON.stringify(again) === JSON.stringify(p);
-    out.rows.push({ id: s.id, seed: i, q: p.q, fmt: p.fmt, a: p.a,
+    out.rows.push({ id: s.id, seed: i, q: p.q, fmt: p.fmt, a: p.a, strand: s.s,
                     slips: p.slips || [], d: p.d, hint: p.hint || '',
                     opts: p.options || null, det: !!same });
   }
@@ -386,6 +388,17 @@ def main():
             tag, v = s.get('tag'), s.get('v')
             if tag not in known_tags:
                 problems.append(f'{sid} seed {seed}: unknown error tag {tag!r}')
+            else:
+                # An explanation is only useful if it is TRUE for the question
+                # it appears under. `strands` declares where each one applies;
+                # a tag used outside them shows a child advice about a different
+                # kind of maths, which is worse than saying nothing.
+                allowed = data['tagStrands'].get(tag)
+                if allowed and row.get('strand') not in allowed:
+                    problems.append(
+                        f'{sid} seed {seed}: tag {tag!r} is not declared for the '
+                        f'{row.get("strand")!r} strand — its wording will not fit '
+                        f'this question')
             key = json.dumps(v, sort_keys=True)
             if key == json.dumps(a, sort_keys=True):
                 problems.append(f'{sid} seed {seed}: slip {v!r} is IDENTICAL to the right '

@@ -28,10 +28,10 @@
 // A child can only ever write their own summary, because the uid in the
 // document has to match the uid doing the writing. Any signed-in member of the
 // family can read. Nothing sensitive is here — it is how many skills are
-// mastered and when someone last practised.
+// mastered and when someone last practiced.
 //
 // Copy this file verbatim into wonder-lab and unicorn-reading-academy when
-// their summaries get added; only summarise() differs per app.
+// their summaries get added; only summarize() differs per app.
 
 const FAMILY_CODE = 'homeschool';
 const APP_ID = 'math-lab';
@@ -53,7 +53,7 @@ const Family = {
   // Small enough to write on every save without thinking about it. Everything
   // here is DERIVED — the dashboard never needs the problem-level record, and
   // keeping it out means a summary leak is not a progress leak.
-  summarise(profile) {
+  summarize(profile) {
     const p = profile.p || {};
     const skills = p.skills || {};
     // Progress.state() DERIVES the state from the record — there is no stored
@@ -109,7 +109,7 @@ const Family = {
       uid: sync.uid,
       name: profile.name,
       app: APP_ID,
-      summary: this.summarise(profile),
+      summary: this.summarize(profile),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
   },

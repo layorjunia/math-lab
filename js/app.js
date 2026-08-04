@@ -79,7 +79,7 @@ const App = {
   renderNav() {
     const items = [['today', '🎯', 'Today'], ['quests', '🧭', 'Quests'],
                    ['map', '🗺️', 'Map'], ['play', '🎲', 'Play'],
-                   ['report', '📈', 'Progress'], ['parent', '👋', 'Grown-ups']];
+                   ['report', '📈', 'Progress'], ['parent', '👋', 'Parents']];
     // Six destinations is one more than a thumb bar wants, so Grown-ups drops
     // off the bar on a phone and is reached from Progress instead.
     const onPhone = window.matchMedia('(max-width: 560px)').matches;
@@ -106,10 +106,18 @@ const App = {
   },
 
   // An expression has no clip of its own — it is composed from the number
-  // vocabulary by numspeak. Prose has its own recording.
+  // vocabulary by numspeak, which is fine, because a number read as a sequence
+  // of numbers and operators is how a person reads it aloud anyway.
+  //
+  // PROSE IS NOT COMPOSED. NumSpeak.expr returns [] for anything that is not a
+  // bare expression, so this returns no button rather than reading a sentence
+  // one word at a time.
   listenExpr(text) {
     const parts = NumSpeak.expr(text);
     if (!parts.length) return '';
+    // Every part must exist as a clip, or the sequence has a hole in it that
+    // the browser voice fills in a different voice.
+    if (AudioLib.manifest && !AudioLib.hasAll(parts)) return '';
     const i = this._sayReg.push({ parts }) - 1;
     return `<button class="listen" data-say="${i}" aria-label="Listen"
       onclick="event.stopPropagation();App.say(${i})">
@@ -174,7 +182,7 @@ const App = {
   pickGrade(g) {
     this._grade = g;
     // .sel, not .right: green means "you answered correctly" everywhere else
-    // in this app, and reusing it for "selected" teaches the colour wrong.
+    // in this app, and reusing it for "selected" teaches the color wrong.
     document.querySelectorAll('.opt[data-g]').forEach(b =>
       b.classList.toggle('sel', +b.dataset.g === g));
   },
@@ -225,6 +233,14 @@ const App = {
     try { prob = gen(mulberry32(seed >>> 0)); }
     catch (e) { this.next(); return; }
 
+    // Teach before testing. A skill the child has never met gets its lesson
+    // first — this app was a quiz with good error messages until it did.
+    if (!this.wasTaught(skillId) && Progress.state(skillId) === 'unseen'
+        && lessonFor(skillId) && !this._skipLesson) {
+      this.cur = { p: prob, skill: s, seed };
+      return this.lesson(skillId, true);
+    }
+    this._skipLesson = false;
     this.cur = { p: prob, skill: s, seed };
     this.typed = ''; this.typed2 = ''; this.focus2 = false; this.answered = false;
     Progress.markSeen(skillId);
@@ -241,8 +257,11 @@ const App = {
     this.resetSay();
     // Word problems have their own recording; bare expressions are composed
     // from the number vocabulary.
-    const listen = wordy && AudioLib.has(prob.q)
-      ? this.listenBtn(prob.q) : this.listenExpr(prob.q);
+    // A whole-string clip if there is one; otherwise compose, but only if this
+    // really is an expression. Prose with no clip gets NO button — the teaching
+    // text below always has one, and a silent button is better than a robot.
+    const listen = AudioLib.has(prob.q) ? this.listenBtn(prob.q)
+                                        : this.listenExpr(prob.q);
 
     const body = `
       ${this.bar('Today', `<span class="chip mono">${pos}</span>`)}
@@ -271,20 +290,31 @@ const App = {
     if (prob.fmt === 'fraction') {
       return `<div class="ansrow" style="margin-top:14px">
         <div class="fracbox">
-          <input class="ans small" id="a1" inputmode="numeric" readonly value="${this.esc(this.typed)}">
+          <input class="ans small ${this.focus2 ? '' : 'active'}" id="a1" inputmode="numeric"
+            readonly value="${this.esc(this.typed)}" onclick="App.focusBox(0)"
+            aria-label="top number">
           <div class="rule"></div>
-          <input class="ans small" id="a2" inputmode="numeric" readonly value="${this.esc(this.typed2)}">
-        </div></div>`;
+          <input class="ans small ${this.focus2 ? 'active' : ''}" id="a2" inputmode="numeric"
+            readonly value="${this.esc(this.typed2)}" onclick="App.focusBox(1)"
+            aria-label="bottom number">
+        </div></div>
+        <p class="dim small boxhint" id="boxhint">${this.focus2
+          ? 'Typing the bottom number' : 'Typing the top number'}</p>`;
     }
     if (prob.fmt === 'quotrem' || prob.fmt === 'coord') {
       const sep = prob.fmt === 'coord' ? ',' : 'r';
       const lead = prob.fmt === 'coord' ? '<span class="slash">(</span>' : '';
       const tail = prob.fmt === 'coord' ? '<span class="slash">)</span>' : '';
+      const names = prob.fmt === 'coord' ? ['across', 'up'] : ['answer', 'remainder'];
       return `<div class="ansrow" style="margin-top:14px">${lead}
-        <input class="ans small" id="a1" inputmode="numeric" readonly value="${this.esc(this.typed)}">
+        <input class="ans small ${this.focus2 ? '' : 'active'}" id="a1" inputmode="numeric"
+          readonly value="${this.esc(this.typed)}" onclick="App.focusBox(0)">
         <span class="slash small dim">${sep}</span>
-        <input class="ans small" id="a2" inputmode="numeric" readonly value="${this.esc(this.typed2)}">
-        ${tail}</div>`;
+        <input class="ans small ${this.focus2 ? 'active' : ''}" id="a2" inputmode="numeric"
+          readonly value="${this.esc(this.typed2)}" onclick="App.focusBox(1)">
+        ${tail}</div>
+        <p class="dim small boxhint" id="boxhint">Typing the ${
+          this.focus2 ? names[1] : names[0]} number</p>`;
     }
     const prefix = prob.fmt === 'money' ? '<span class="slash">$</span>' : '';
     return `<div class="ansrow" style="margin-top:14px">${prefix}
@@ -299,11 +329,12 @@ const App = {
     const two = ['fraction', 'quotrem', 'coord'].includes(prob.fmt);
     const neg = ['as.integers', 'npv.abs', 'npv.integers', 'geo.coord4']
       .includes(this.cur.skill.id);
-    const extra = dec ? '.' : (neg ? '−' : (two ? '↹' : ''));
+    const extra = dec ? '.' : (neg ? '−' : (two ? 'next' : ''));
     return `<div class="keys">
       ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n =>
         `<button class="key" onclick="App.k('${n}')">${n}</button>`).join('')}
-      <button class="key ${extra ? '' : 'del'}" onclick="App.k('${extra || 'del'}')">${extra || '⌫'}</button>
+      <button class="key ${extra ? '' : 'del'} ${extra === 'next' ? 'nextbox' : ''}"
+        onclick="App.k('${extra || 'del'}')">${extra === 'next' ? '↓ next' : (extra || '⌫')}</button>
       <button class="key" onclick="App.k('0')">0</button>
       ${extra ? `<button class="key del" onclick="App.k('del')">⌫</button>` : ''}
       <button class="key go ${extra ? 'wide' : 'wide'}" onclick="App.submit()">Check</button>
@@ -313,7 +344,7 @@ const App = {
   k(ch) {
     if (this.answered) return;
     const two = ['fraction', 'quotrem', 'coord'].includes(this.cur.p.fmt);
-    if (ch === '↹') { this.focus2 = !this.focus2; return this.repaintAns(); }
+    if (ch === 'next') { this.focus2 = !this.focus2; return this.repaintAns(); }
     const key = (two && this.focus2) ? 'typed2' : 'typed';
     if (ch === 'del') this[key] = this[key].slice(0, -1);
     else if (ch === '−') this[key] = this[key].startsWith('−') ? this[key].slice(1) : '−' + this[key];
@@ -321,15 +352,25 @@ const App = {
     else if (this[key].length < 9) this[key] += ch;
     // Typing the first box full moves to the second by itself; the ↹ key is
     // there for going back.
-    if (two && !this.focus2 && this[key].length >= 1 && ch !== 'del') { /* stay */ }
     this.repaintAns();
     Sfx.play('tap', 0.25);
   },
 
+  focusBox(which) {
+    this.focus2 = !!which;
+    this.repaintAns();
+  },
+
   repaintAns() {
     const a1 = document.getElementById('a1'), a2 = document.getElementById('a2');
-    if (a1) { a1.value = this.typed; a1.style.borderColor = this.focus2 ? '' : 'var(--amber)'; }
-    if (a2) { a2.value = this.typed2; a2.style.borderColor = this.focus2 ? 'var(--amber)' : ''; }
+    if (a1) { a1.value = this.typed; a1.classList.toggle('active', !this.focus2); }
+    if (a2) { a2.value = this.typed2; a2.classList.toggle('active', this.focus2); }
+    const h = document.getElementById('boxhint');
+    if (h && this.cur) {
+      const names = this.cur.p.fmt === 'coord' ? ['across', 'up']
+        : this.cur.p.fmt === 'quotrem' ? ['answer', 'remainder'] : ['top', 'bottom'];
+      h.textContent = 'Typing the ' + (this.focus2 ? names[1] : names[0]) + ' number';
+    }
   },
 
   chose(i) {
@@ -393,7 +434,20 @@ const App = {
     if (this.answered) return;
     const { p: prob, skill } = this.cur;
     const got = this.parse(prob.fmt);
-    if (got === null) { Sfx.play('retry', 0.3); return; }
+    if (got === null) {
+      // Two-box answers: pressing Check with one box empty used to do nothing at
+      // all — no sound, no message, no movement. Move to the empty box and say
+      // so, instead of looking broken.
+      const two = ['fraction', 'quotrem', 'coord'].includes(prob.fmt);
+      if (two && this.typed && !this.typed2) {
+        this.focus2 = true;
+        this.repaintAns();
+        const h = document.getElementById('boxhint');
+        if (h) { h.textContent = 'Now type the other number'; h.classList.add('nudge'); }
+      }
+      Sfx.play('retry', 0.3);
+      return;
+    }
 
     const strict = this.STRICT_FORM.includes(skill.id);
     const right = this.same(got, prob.a, prob.fmt, strict);
@@ -441,7 +495,11 @@ const App = {
           <div class="fix" style="border:none;padding-top:6px">
             The answer is <b>${this.esc(shown)}</b>.</div>
         </div>
-        <div style="margin-top:10px;display:flex;gap:8px">
+        <div id="howto"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          ${lessonFor(this.cur.skill.id)
+            ? `<button class="btn ghost" style="flex:1 1 100%"
+                 onclick="App.showHow()">Show me how</button>` : ''}
           <button class="btn ghost" style="flex:1" onclick="App.retry()">Try it again</button>
           <button class="btn" style="flex:1" onclick="App.next()">Next</button>
         </div>`;
@@ -454,6 +512,23 @@ const App = {
       if (btn) v.querySelector('.verdict').insertAdjacentHTML('beforeend',
         `<div style="margin-top:10px">${btn}</div>`);
     }
+  },
+
+  // The worked example, inline, without losing the problem on screen.
+  showHow() {
+    const el = document.getElementById('howto');
+    const l = lessonFor(this.cur.skill.id);
+    if (!el || !l) return;
+    if (el.innerHTML) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="card worked" style="margin-top:12px;text-align:left">
+      <h3>How it is done</h3>
+      <p class="wq">${this.esc(l.ex.q)}</p>
+      <ol class="steps">${l.ex.steps.map(t => `<li>${this.esc(t)}</li>`).join('')}</ol>
+      <p class="wa">Answer: <b>${this.esc(l.ex.a)}</b></p>
+      <p class="dim small" style="margin-top:10px">${this.esc(l.watch)}</p>
+      <div style="margin-top:10px">${this.listenBtn(l.ex.q, ...l.ex.steps, l.watch)}</div>
+    </div>`;
+    this.syncListen();
   },
 
   fmtAnswer(a, fmt) {
@@ -493,6 +568,68 @@ const App = {
           </div>`).join('')}
       </div></div>`;
   },
+
+
+  // ── THE LESSON ──
+  //
+  // A child meets a skill here, not in a test. This screen is shown before the
+  // first problem of any skill they have never seen, is reachable any time from
+  // the map, and is one tap from any wrong answer.
+  lesson(id, thenPractice) {
+    const l = lessonFor(id), s = SKILL[id];
+    if (!l) return thenPractice ? this.serve(id, (Date.now() % 100000) | 0) : this.go('map');
+    this.resetSay();
+    const back = thenPractice
+      ? `<button class="btn wide big" style="margin-top:4px"
+           onclick="App.startAfterLesson('${id}')">I'm ready — start practicing</button>`
+      : `<button class="btn wide big" style="margin-top:4px"
+           onclick="App.practise('${id}')">Practice this</button>
+         <button class="btn ghost wide" style="margin-top:10px"
+           onclick="App.openSkill('${id}')">Back</button>`;
+    this.el(`
+      ${this.bar('Learn', `<span class="chip">${this.esc(GRADES[s.g].short)}</span>`)}
+      <div class="card" style="border-left:3px solid var(--${s.s})">
+        <p class="small dim">${this.esc(STRANDS[s.s].name)}</p>
+        <h2 style="margin-top:4px">${this.esc(s.name)}</h2>
+        <p style="margin-top:10px;font-size:1.05rem;line-height:1.5">${this.esc(l.idea)}</p>
+        <div style="margin-top:10px">${this.listenBtn(l.idea)}</div>
+      </div>
+
+      <div class="card">
+        <h3>How to do it</h3>
+        <ol class="steps">${l.steps.map(t => `<li>${this.esc(t)}</li>`).join('')}</ol>
+        <div style="margin-top:10px">${this.listenBtn(...l.steps)}</div>
+      </div>
+
+      <div class="card worked">
+        <h3>Worked example</h3>
+        <p class="wq">${this.esc(l.ex.q)}</p>
+        <ol class="steps">${l.ex.steps.map(t => `<li>${this.esc(t)}</li>`).join('')}</ol>
+        <p class="wa">Answer: <b>${this.esc(l.ex.a)}</b></p>
+        <div style="margin-top:10px">${this.listenBtn(l.ex.q, ...l.ex.steps)}</div>
+      </div>
+
+      <div class="card watch">
+        <h3>Watch out</h3>
+        <p>${this.esc(l.watch)}</p>
+        <div style="margin-top:10px">${this.listenBtn(l.watch)}</div>
+      </div>
+      ${back}`);
+  },
+
+  startAfterLesson(id) {
+    this.taught(id);
+    this._skipLesson = true;
+    this.serve(id, (this.cur && this.cur.seed) || ((Date.now() % 100000) | 0));
+  },
+
+  // Remember that the lesson has been shown, so it does not reappear every day.
+  taught(id) {
+    Progress.p.taught = Progress.p.taught || {};
+    Progress.p.taught[id] = Store.dayKey();
+    Progress.commit();
+  },
+  wasTaught(id) { return !!(Progress.p.taught || {})[id]; },
 
   // ── MAP ──
   map() {
@@ -572,12 +709,12 @@ const App = {
         <div class="sks" style="margin-top:8px">
           ${s.next.slice(0, 6).map(b => this.skillCard(SKILL[b])).join('')}</div></div>` : ''}
       ${GEN[id] && !blockers.length
-        ? `<button class="btn wide big" onclick="App.practise('${id}')">Practise this</button>`
+        ? `<button class="btn wide big" onclick="App.practice('${id}')">Practice this</button>`
         : (blockers.length ? '' : `<p class="dim small">Coming soon.</p>`)}
     `);
   },
 
-  practise(id) {
+  practice(id) {
     this.tab = 'today';
     this.serve(id, (Date.now() % 100000) >>> 0);
     this.renderNav();
@@ -840,7 +977,7 @@ const App = {
       ${this.bar('Quests')}
       <p class="dim small" style="margin-bottom:12px">
         Short routes through the map, each with a reason. Everything on a quest
-        is a skill you can practise on its own — the quest is the order, and why.</p>
+        is a skill you can practice on its own — the quest is the order, and why.</p>
       ${QUESTS.map(q => {
         const stops = questStops(q);
         const done = stops.filter(st =>
@@ -884,7 +1021,7 @@ const App = {
           <h3 style="margin-top:5px">${this.esc(s.name)}</h3>
           <p class="dim small" style="margin-top:4px;font-style:italic">${this.esc(st.note)}</p>
           <button class="btn ghost wide" style="margin-top:10px"
-            onclick="App.practise('${st.s}')">${done ? 'Practise again' : 'Practise this'}</button>
+            onclick="App.practice('${st.s}')">${done ? 'Practice again' : 'Practice this'}</button>
         </div>`;
       }).join('')}
       <div class="card">
@@ -939,12 +1076,12 @@ const App = {
   parent() {
     const p = Progress.p;
     this.el(`
-      ${this.bar('Grown-ups')}
+      ${this.bar('For parents')}
       <div class="card">
         <h2>${this.esc(Progress.profile.name)}</h2>
         <p class="dim small" style="margin-top:4px">
           ${GRADES[p.grade].name} · on this device</p>
-        ${this.parentBody(Family.summarise(Progress.profile), 'math-lab')}
+        ${this.parentBody(Family.summarize(Progress.profile), 'math-lab')}
       </div>
       <div class="card">
         <h2>Every app</h2>
@@ -966,7 +1103,7 @@ const App = {
         </label>
         <p class="dim small" style="margin-top:6px">
           Off by default. Every problem has a Listen button either way — this is
-          for a child who reads less easily than they do maths.</p>
+          for a child who reads less easily than they do math.</p>
       </div>`);
     if (window.Sync && Sync.uid) this.loadFamily();
   },

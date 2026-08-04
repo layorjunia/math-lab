@@ -19,8 +19,8 @@
 //   d      difficulty, used to keep a ladder monotone within one skill
 //   parts  optional narration override; otherwise numspeak reads `q`
 //
-// NO FLOATS. `0.1 + 0.2` is 0.30000000000000004 and a maths app that ships that
-// is worse than no maths app. Decimals are scaled integers throughout; the only
+// NO FLOATS. `0.1 + 0.2` is 0.30000000000000004 and a math app that ships that
+// is worse than no math app. Decimals are scaled integers throughout; the only
 // division allowed is one proven to be exact.
 
 // ── seeded random ────────────────────────────────────────────────────────
@@ -672,9 +672,12 @@ GEN['fr.cmp.unlike'] = r => {
 };
 
 GEN['fr.as.same'] = r => {
-  const d = G.ri(r, 2, 12), a = G.ri(r, 1, d - 1);
+  const d = G.ri(r, 3, 12), a = G.ri(r, 1, d - 1);
   const plus = r() < 0.5;
-  const b = plus ? G.ri(r, 1, d - a > 0 ? d - a : 1) : G.ri(r, 1, a);
+  // Never subtract a fraction from itself: "2/8 - 2/8" has the answer 0/8,
+  // which is a badly-written question and an ugly thing to have to type.
+  if (!plus && a < 2) return GEN['fr.as.same'](r);
+  const b = plus ? G.ri(r, 1, Math.max(1, d - a)) : G.ri(r, 1, a - 1);
   const n = plus ? a + b : a - b;
   return { q: `${a}/${d} ${plus ? '+' : '−'} ${b}/${d} = ▢`, fmt: 'fraction',
            a: { n, d }, d: d, hint: 'Same bottom number: work on the tops only.',
@@ -1048,7 +1051,7 @@ GEN['da.mmr'] = r => {
            a: wantRange ? range : median, d: n,
            hint: wantRange ? 'Biggest take away smallest.' : 'Put them in order first, then take the middle one.',
            slips: G.slips(wantRange ? range : median,
-             [{ v: wantRange ? median : range, tag: 'op.swapped' },
+             [{ v: wantRange ? median : range, tag: 'stat.other' },
               { v: vals[(n - 1) / 2], tag: 'unknown' }]) };
 };
 

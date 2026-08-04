@@ -45,7 +45,7 @@ const UI_PHRASES = [
 
   // the map
   'Not started', 'Started', 'Getting there', 'Mastered', 'Needs a look', 'Locked',
-  'You need these first.', 'This unlocks.', 'Practise this.',
+  'You need these first.', 'This unlocks.', 'Practice this.',
   'Everything here is ready for you.',
 
   // progress

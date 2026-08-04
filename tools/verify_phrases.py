@@ -16,7 +16,7 @@ TWO DESIGN DECISIONS make the report trustworthy rather than noise:
    that the reference's `words_of()` strips to [a-z0-9' ] with a SUBS table
    covering only 1-10, so whisper's "40" against a reference of "forty" flags
    forever. A fifth of Wonder Lab's corpus flagged for exactly this reason and
-   the report became unreadable. In a maths app it would be most of it. So the
+   the report became unreadable. In a math app it would be most of it. So the
    normaliser here runs numbers, ordinals, fractions, percent, degrees and unit
    abbreviations through the same form on both sides BEFORE scoring.
 
@@ -55,12 +55,12 @@ SUBS = {
     'its': 'it is', 'thats': 'that is', 'youre': 'you are', 'theres': 'there is',
     'lets': 'let us', 'isnt': 'is not', 'doesnt': 'does not', 'didnt': 'did not',
     'wouldnt': 'would not', 'couldnt': 'could not', 'cannot': 'can not',
-    'practise': 'practice', 'practising': 'practicing',
-    'per cent': 'percent', 'math': 'maths',
-    'grey': 'gray', 'nought': 'zero',
+    'practice': 'practice', 'practicing': 'practicing',
+    'per cent': 'percent', 'math': 'math',
+    'gray': 'gray', 'zero': 'zero',
 }
 UNITS = {'ft': 'feet', 'in': 'inches', 'lb': 'pounds', 'oz': 'ounces',
-         'mi': 'miles', 'yd': 'yards', 'cm': 'centimetres', 'km': 'kilometres',
+         'mi': 'miles', 'yd': 'yards', 'cm': 'centimeters', 'km': 'kilometers',
          'hr': 'hours', 'min': 'minutes', 'sec': 'seconds'}
 
 

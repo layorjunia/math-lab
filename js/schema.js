@@ -77,13 +77,30 @@ const ERRORS = {
   },
   'op.swapped': {
     name: 'The other operation',
+    strands: ['as', 'md', 'fr', 'dp', 'alg', 'mt', 'npv', 'da'],
     say: 'That is the answer to the opposite sign — adding where the question subtracts, or the other way round.',
     fix: 'Read the sign before you start. Say it out loud if it helps.',
   },
+  'pick.opposite': {
+    name: 'The opposite of what was asked',
+    strands: ['npv', 'mt', 'da', 'geo', 'fr', 'dp', 'alg', 'as', 'md'],
+    say: 'That is the right comparison read the wrong way round — the smaller one where the question asked for the bigger, or the other way about.',
+    fix: 'Read the question again and find the word that says which one you want: bigger, smaller, longest, most.',
+  },
   'count.off1': {
     name: 'Out by one',
-    say: 'One away from the right answer — usually a counted step that got counted twice, or missed.',
-    fix: 'When counting on, the number you start at is not a step. Start counting at the next one.',
+    strands: ['npv', 'as', 'md', 'fr', 'mt', 'geo', 'da', 'alg', 'dp'],
+    say: 'One away from the right answer — something got counted twice, or missed.',
+    fix: 'Count again slowly, keeping track of where you started and where you stopped.',
+  },
+  // Counting ON is its own mistake and deserves its own words. The advice
+  // below is only true for a sequence, which is why it is no longer attached
+  // to every skill that can be out by one.
+  'seq.start': {
+    name: 'Started the count in the wrong place',
+    strands: ['npv', 'alg'],
+    say: 'The counting is right but it began one step out.',
+    fix: 'When you count on, the number you start at is not a step. The first jump lands on the next one.',
   },
   'place.misaligned': {
     name: 'Columns out of line',
@@ -124,13 +141,27 @@ const ERRORS = {
   },
   'op.invert': {
     name: 'Divided the wrong way',
+    strands: ['md', 'alg', 'dp', 'da', 'mt', 'fr'],
     say: 'The divisor and the dividend swapped places.',
     fix: 'The number being shared out goes inside. The number of groups goes outside.',
+  },
+  'frac.flipped': {
+    name: 'Top and bottom swapped',
+    strands: ['fr', 'dp', 'da', 'mt'],
+    say: 'The two numbers are right but they are the wrong way up.',
+    fix: 'The BOTTOM says how many pieces the whole is cut into. The TOP says how many you have.',
+  },
+  'frac.wrongden': {
+    name: 'The wrong bottom number',
+    strands: ['fr', 'dp'],
+    say: 'The pieces were counted correctly but named as the wrong size.',
+    fix: 'Count how many equal steps make ONE whole. That is the bottom number.',
   },
 
   // ── place value and rounding ──
   'pv.digit': {
     name: 'The wrong column',
+    strands: ['npv', 'as', 'dp', 'md'],
     say: 'That digit is real, it is just in a different place than the one the question asked about.',
     fix: 'Count the columns from the right: ones, tens, hundreds, thousands.',
   },
@@ -196,21 +227,25 @@ const ERRORS = {
 
   // ── measurement and time ──
   'unit.direction': {
+    strands: ['mt', 'da', 'dp'],
     name: 'Converted the wrong way',
     say: 'The conversion happened, but upside down — a bigger unit should give a smaller number, not a larger one.',
     fix: 'Going to a SMALLER unit gives MORE of them, so multiply. Going bigger, divide.',
   },
   'unit.mixed': {
+    strands: ['mt'],
     name: 'Two units, added straight',
     say: 'Two different units were added together without converting one first.',
     fix: 'Make both the same unit, then add.',
   },
   'time.60': {
+    strands: ['mt'],
     name: 'An hour is not a hundred',
     say: 'The minutes rolled over at 100 instead of at 60.',
     fix: 'Sixty minutes make an hour. After :59 comes the next hour, not :60.',
   },
   'perim.area': {
+    strands: ['mt', 'geo'],
     name: 'Perimeter and area swapped',
     say: 'That is the other measurement — the distance round the edge instead of the space inside, or the other way round.',
     fix: 'Perimeter is a walk round the outside, so add. Area is covering the inside, so multiply.',
@@ -218,11 +253,13 @@ const ERRORS = {
 
   // ── geometry, integers, order of operations ──
   'angle.otherscale': {
+    strands: ['geo'],
     name: 'The protractor’s other scale',
     say: 'A protractor has two rings of numbers, and this reading came off the wrong one.',
     fix: 'Start from the zero that sits on one arm of the angle, and read round from there.',
   },
   'coord.swapped': {
+    strands: ['geo', 'da'],
     name: 'x and y swapped',
     say: 'The two coordinates went in the other order.',
     fix: 'Along the corridor, then up the stairs. x first, always.',
@@ -248,9 +285,64 @@ const ERRORS = {
     fix: '2⁵ means 2 × 2 × 2 × 2 × 2, not 2 × 5.',
   },
 
+
+  // ── reading a clock ──
+  // These were `time.60` and `count.off1`, whose sentences are about minute
+  // arithmetic and counting on. Neither describes misreading a hand.
+  'clock.hour': {
+    name: 'The hour hand, one hour on',
+    strands: ['mt'],
+    say: 'The minutes are right, but the hour is one too far ahead.',
+    fix: 'The short hand only points straight AT a number on the hour. The rest of the time it sits between two numbers, and the hour is the one it has already passed.',
+  },
+  'clock.back': {
+    name: 'The hour hand, one hour back',
+    strands: ['mt'],
+    say: 'The minutes are right, but the hour is one too early.',
+    fix: 'Find the two numbers the short hand sits between. The hour is the smaller one — the one it has passed.',
+  },
+  'clock.minutes': {
+    name: 'The minutes came out wrong',
+    strands: ['mt'],
+    say: 'The hour is right. The long hand was read as the wrong number of minutes.',
+    fix: 'The long hand counts in FIVES. Pointing at the 3 means fifteen minutes, not three.',
+  },
+  'sym.count': {
+    name: 'Not every fold works',
+    strands: ['geo'],
+    say: 'That is close, but not every line you counted folds the shape exactly onto itself.',
+    fix: 'A line of symmetry has to land every corner on another corner. Try folding along each one in your head.',
+  },
+  'shape.name': {
+    name: 'A different shape',
+    strands: ['geo'],
+    say: 'That is a real shape — it is not this one.',
+    fix: 'Count the sides, then the corners, and check whether any sides are the same length.',
+  },
+  'read.chart': {
+    name: 'Read off the wrong place',
+    strands: ['da'],
+    say: 'That number is on the chart, just not the one the question asked for.',
+    fix: 'Find the label the question names FIRST, then read straight across or straight up from it.',
+  },
+
+  'gave.given': {
+    name: 'That was the number you were given',
+    strands: ['geo', 'mt', 'da', 'npv', 'alg', 'md', 'as', 'fr', 'dp'],
+    say: 'That number is in the question already — it is the one you were told, not the one you were asked to find.',
+    fix: 'Read the question again and put your finger on the part with the question mark. That is what has to be worked out.',
+  },
+  'stat.other': {
+    name: 'The other measure',
+    strands: ['da'],
+    say: 'That is a correct answer — to the other question. The median and the range are different things.',
+    fix: 'The median is the middle value once they are in order. The range is the biggest take away the smallest.',
+  },
+
   // ── the catch-all ──
   'unknown': {
     name: 'Something else',
+    strands: ['npv', 'as', 'md', 'fr', 'dp', 'mt', 'geo', 'da', 'alg'],
     say: 'That is not one of the usual slips, so it is worth working through together.',
     fix: 'Try the problem again one step at a time, saying each step out loud.',
   },

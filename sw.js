@@ -1,10 +1,10 @@
 // Offline cache for Math Lab.
 // CACHE is rewritten by tools/stamp_version.py on every deploy.
-const CACHE = 'mathlab-20260804-1238-998b565';
+const CACHE = 'mathlab-20260804-1306-d6ba570';
 const SHELL = [
   '.', 'index.html', 'css/style.css', 'manifest.json',
   'js/schema.js', 'js/skills.js', 'js/numspeak.js', 'js/generators.js',
-  'js/manipulatives.js', 'js/ui-speech.js', 'js/games.js',
+  'js/manipulatives.js', 'js/lessons.js', 'js/ui-speech.js', 'js/games.js',
   'js/store.js', 'js/audio.js', 'js/app.js',
   // Same-origin only when the app itself is on Pages. On Vercel the manifest
   // lives on the audio origin, so it is fetched and cached at runtime by the

@@ -1,7 +1,7 @@
 {
   "name": "Math Lab",
   "short_name": "Math Lab",
-  "description": "Maths from first grade to sixth — a skill map, a daily deck, and an app that tells you what went wrong.",
+  "description": "Math from first grade to sixth — a skill map, a daily deck, and an app that tells you what went wrong.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

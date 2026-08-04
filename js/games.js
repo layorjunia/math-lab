@@ -13,7 +13,7 @@
 //                       mistakes. Enormously effective: recognising an error is
 //                       a different and harder skill than not making it.
 //   Beat the Clock      fluency needs speed, but a timer against an external
-//                       standard is where children learn to hate maths. This
+//                       standard is where children learn to hate math. This
 //                       races the child's OWN previous best and nothing else.
 //                       No leaderboard, no comparison to a sibling.
 //   Listen Up           hear a number, tap it. Pure number sense, and the only
@@ -42,8 +42,8 @@ const QUESTS = [
   },
   {
     id: 'shop', name: 'A Trip to the Shop', glyph: '🛒', tint: 'mt',
-    intro: 'Money is the only maths that argues back if you get it wrong.',
-    outro: 'Every one of these you can practise for real, in a shop, this week.',
+    intro: 'Money is the only math that argues back if you get it wrong.',
+    outro: 'Every one of these you can practice for real, in a shop, this week.',
     stops: [
       { s: 'mt.coins', note: 'What each coin is worth. Nothing else works without this.' },
       { s: 'mt.money.cnt', note: 'Count a handful.' },
@@ -92,7 +92,7 @@ const QUESTS = [
   },
   {
     id: 'belowzero', name: 'Below Zero', glyph: '🌡️', tint: 'npv',
-    intro: 'The number line does not stop at nought, and everything you know still works.',
+    intro: 'The number line does not stop at zero, and everything you know still works.',
     outro: 'Owing three pounds and having minus three pounds are the same fact written two ways.',
     stops: [
       { s: 'npv.integers', note: 'Where the negatives live.' },

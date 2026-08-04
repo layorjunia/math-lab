@@ -111,8 +111,8 @@ const S = {
     return { q: 'What fraction is shaded?', fmt: 'fraction', svg: shapeFor(r, d, n),
              a: { n, d }, d,
              hint: 'The bottom number is how many pieces the whole is cut into. The top is how many are coloured.',
-             slips: G.slips({ n, d }, [{ v: { n: d, d: n }, tag: 'op.invert' },
-                                       { v: { n: d - n, d }, tag: 'op.swapped' },
+             slips: G.slips({ n, d }, [{ v: { n: d, d: n }, tag: 'frac.flipped' },
+                                       { v: { n: d - n, d }, tag: 'pick.opposite' },
                                        { v: { n, d: d - n }, tag: 'frac.commondenom' }]) };
   };
   GEN['fr.thirds'] = fracNamer([2, 3, 4]);
@@ -141,8 +141,8 @@ const S = {
     return { q: 'What number is the arrow pointing at?', fmt: 'fraction',
              svg: S.wrap(w, 76, s), a: G.frac(n, d), d,
              hint: 'Count the small steps from zero. Each step is one of those parts.',
-             slips: G.slips(G.frac(n, d), [{ v: { n, d: d * 2 }, tag: 'pv.digit' },
-                                           { v: { n: d, d: n }, tag: 'op.invert' }]) };
+             slips: G.slips(G.frac(n, d), [{ v: { n, d: d * 2 }, tag: 'frac.wrongden' },
+                                           { v: { n: d, d: n }, tag: 'frac.flipped' }]) };
   };
 
   /* ══ CLOCKS ═══════════════════════════════════════════════════════════ */
@@ -179,8 +179,9 @@ const S = {
              options: G.shuffle(r, [label(t), ...wrong.slice(0, 3)]),
              svg: clockFace(t), a: label(t), d: m,
              hint: 'The short hand is the hour. The long hand is the minutes.',
-             slips: G.slips(label(t), [{ v: label(t + 60), tag: 'time.60' },
-                                       { v: label(t + (step || 1)), tag: 'count.off1' }]) };
+             slips: G.slips(label(t), [{ v: label(t + 60), tag: 'clock.hour' },
+                                       { v: label(t - 60), tag: 'clock.back' },
+                                       { v: label(t + (step || 1)), tag: 'clock.minutes' }]) };
   };
 
   GEN['mt.time.hour'] = clockGen(30);
@@ -448,7 +449,7 @@ const S = {
     const others = G.shuffle(r, names.filter(n => n !== name)).slice(0, 3);
     return { q, fmt: 'choice', options: G.shuffle(r, [name, ...others]),
              svg: S.wrap(w, h, table[name]()), a: name, d: names.indexOf(name), hint,
-             slips: G.slips(name, others.map(o => ({ v: o, tag: 'unknown' }))) };
+             slips: G.slips(name, others.map(o => ({ v: o, tag: 'shape.name' }))) };
   };
 
   GEN['geo.shapes2d'] = namer(SHAPES2D, 140, 120, 'What shape is this?',
@@ -515,8 +516,8 @@ const S = {
     return { q: `How many lines of symmetry does this ${name.toLowerCase()} have?`,
              fmt: 'number', svg: S.wrap(140, 120, SHAPES2D[name]()), a: lines, d: lines,
              hint: 'A line of symmetry folds the shape exactly onto itself.',
-             slips: G.slips(lines, [{ v: lines - 1, tag: 'count.off1' },
-                                    { v: lines * 2, tag: 'count.off1' }]) };
+             slips: G.slips(lines, [{ v: lines - 1, tag: 'sym.count' },
+                                    { v: lines * 2, tag: 'sym.count' }]) };
   };
 
   /* ══ ANGLES AND LINES ═════════════════════════════════════════════════ */
@@ -534,7 +535,8 @@ const S = {
     return { q: 'Is this angle acute, right or obtuse?', fmt: 'choice',
              options: ['Acute', 'Right', 'Obtuse'], svg: S.wrap(190, 126, s), a: kind, d: deg,
              hint: 'A right angle is a square corner. Smaller is acute, bigger is obtuse.',
-             slips: G.slips(kind, [{ v: kind === 'Acute' ? 'Obtuse' : 'Acute', tag: 'op.swapped' }]) };
+             slips: G.slips(kind, [{ v: kind === 'Acute' ? 'Obtuse' : 'Acute',
+                                     tag: 'pick.opposite' }]) };
   };
 
   GEN['geo.anglerule'] = r => {
@@ -561,7 +563,7 @@ const S = {
              hint: onLine ? 'Angles on a straight line add up to 180 degrees.'
                           : 'A right angle is 90 degrees altogether.',
              slips: G.slips(total - a, [{ v: (onLine ? 90 : 180) - a, tag: 'unknown' },
-                                        { v: a, tag: 'op.swapped' },
+                                        { v: a, tag: 'gave.given' },
                                         { v: 360 - a, tag: 'unknown' }]) };
   };
 
@@ -716,7 +718,7 @@ const S = {
                fmt: 'number', svg: barChart(counts, 5), a: diff, d: counts[hiI],
                hint: 'Read both bars, then subtract.',
                slips: G.slips(diff, [{ v: counts[hiI] + counts[loI], tag: 'op.swapped' },
-                                     { v: counts[hiI], tag: 'unknown' }]) };
+                                     { v: counts[hiI], tag: 'read.chart' }]) };
     }
     return { q: `How many ${LABELS[i].toLowerCase()}?`, fmt: 'number',
              svg: barChart(counts, 5), a: counts[i], d: counts[i],
@@ -798,7 +800,7 @@ const S = {
     return { q: `One is picked without looking. What is the chance it is ${cols[w][0]}?`,
              fmt: 'fraction', svg: S.wrap(Math.max(80, x + 10), 64, s),
              a: G.frac(counts[w], total), d: total,
-             hint: 'How many of that colour, out of how many there are altogether.',
+             hint: 'How many of that color, out of how many there are altogether.',
              slips: G.slips(G.frac(counts[w], total),
                [{ v: { n: counts[w], d: total - counts[w] }, tag: 'frac.commondenom' },
                 { v: { n: total, d: counts[w] }, tag: 'op.invert' }]) };
