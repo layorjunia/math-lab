@@ -229,9 +229,19 @@ const S = {
     const n = ri(r, 2, 6);
     const coins = Array.from({ length: n }, () => pick(r, COINS));
     const total = coins.reduce((s, c) => s + c.v, 0);
+    // Under a dollar the answer is a number of CENTS, so ask for cents and give
+    // a plain number pad. Only once it crosses a dollar is dollars-and-cents
+    // the natural way to write it.
+    if (total < 100) {
+      return { q: 'How many cents is this altogether?', fmt: 'cents', svg: coinRow(coins),
+               a: total, d: total,
+               hint: 'Start with the biggest coins and count on from there.',
+               slips: G.slips(total, [{ v: total - coins[0].v, tag: 'count.off1' },
+                                      { v: n, tag: 'unknown' }]) };
+    }
     return { q: 'How much is this altogether?', fmt: 'money', svg: coinRow(coins),
              a: total, d: total,
-             hint: 'Start with the biggest coins and count on from there.',
+             hint: 'Count the dollars first, then the cents left over.',
              slips: G.slips(total, [{ v: total - coins[0].v, tag: 'count.off1' },
                                     { v: n, tag: 'unknown' }]) };
   };

@@ -22,6 +22,7 @@ const FORMATS = {
   fraction: 'type a numerator and a denominator',
   decimal:  'type a decimal',
   money:    'type an amount in dollars and cents',
+  cents:    'type a whole number of cents',
   time:     'type a time',
   choice:   'pick one of the options',
   multi:    'pick every one that fits',

@@ -900,8 +900,11 @@ GEN['mt.convert'] = r => {
 GEN['mt.money.chg'] = r => {
   const paid = G.pick(r, [100, 500, 1000]);
   const cost = G.ri(r, 5, paid - 5);
-  return { q: `You pay with ${G.money(paid)} for something costing ${G.money(cost)}. How much change?`,
-           fmt: 'money', a: paid - cost, d: paid,
+  const change = paid - cost;
+  return { q: change < 100
+             ? `You pay with ${G.money(paid)} for something costing ${G.money(cost)}. How many cents change?`
+             : `You pay with ${G.money(paid)} for something costing ${G.money(cost)}. How much change?`,
+           fmt: change < 100 ? 'cents' : 'money', a: change, d: paid,
            hint: 'Count on from the price up to what you handed over.',
            slips: G.slips(paid - cost, [{ v: cost, tag: 'op.swapped' },
                                         { v: G.subNoBorrow(paid, cost), tag: 'borrow.forgot' }]) };

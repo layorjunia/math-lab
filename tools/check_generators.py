@@ -329,6 +329,22 @@ RANGE = {
 }
 
 
+def check_handlers():
+    """Every App.x(...) named in an onclick must be a real method.
+
+    A renamed method leaves a button that silently does nothing when tapped —
+    no error, no console warning, just a dead control. That is how the only way
+    from a lesson into practice sat broken.
+    """
+    src = open(os.path.join(ROOT, 'js', 'app.js'), encoding='utf-8').read()
+    defined = set(re.findall(r'^  (?:async )?(\w+)\s*\(', src, re.M))
+    defined |= set(re.findall(r'^  (\w+):\s*(?:function)?\s*\(', src, re.M))
+    called = set(re.findall(r'App\.(\w+)\s*\(', src))
+    missing = sorted(c for c in called if c not in defined)
+    return [f'js/app.js: onclick calls App.{m}() but no such method exists — '
+            f'that button does nothing' for m in missing]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--draws', type=int, default=4000)
@@ -442,6 +458,7 @@ def main():
 
     for sid in data['missing']:
         problems.append(f'{sid}: no generator (skills.js declares it, GEN does not have it)')
+    problems.extend(check_handlers())
 
     # Everything, at the end, after every generator has contributed — and
     # GROUPED. A flat list truncated at 60 lines shows one loud failure and

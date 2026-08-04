@@ -199,7 +199,10 @@ const Progress = {
   // back into the deck by weakPrereqs() below.
   assumed(id) {
     const s = SKILL[id];
-    return !!s && s.g <= (this.p.grade || 1) - 2;
+    // One full grade below. A child who says they are in grade 3 starts on
+    // grade-3 work; grade-2 material returns the moment something depends on it
+    // and they get it wrong (weakPrereqs), not as a toll gate on day one.
+    return !!s && s.g <= (this.p.grade || 1) - 1;
   },
 
   ok(id) {
@@ -254,7 +257,13 @@ const Progress = {
     const held = p.deck[grade];
     if (held && held.day === today && held.served.length) return held;
 
-    const pool = SKILLS.filter(s => s.g <= grade && GEN[s.id]);
+    // At or one grade below. Anything older only enters through weakPrereqs()
+    // below — i.e. because the child is actually getting something wrong that
+    // depends on it, not as filler.
+    const atLevel = SKILLS.filter(s => s.g === grade || s.g === grade - 1);
+    const pool = (atLevel.length >= DECK.minSkills ? atLevel
+                                                   : SKILLS.filter(s => s.g <= grade))
+                 .filter(s => GEN[s.id]);
     const st = id => this.state(id);
     const add = (list, ids) => ids.forEach(id => { if (!list.includes(id)) list.push(id); });
 
@@ -281,8 +290,7 @@ const Progress = {
       .map(s => s.id);
     add(chosen, this.shuffle(review).slice(0, DECK.reviewSkills));
 
-    // 4. something new — the shallowest unlocked skill AT the child's grade,
-    //    falling back down the grades only if there is nothing there
+    // 4. something new — the shallowest unlocked skill AT the child's grade
     const fresh = pool
       .filter(s => st(s.id) === 'unseen' && this.unlocked(s.id))
       .sort((a, b) => (grade - a.g) - (grade - b.g) || a.depth - b.depth)
@@ -305,7 +313,13 @@ const Progress = {
       add(chosen, reachable.sort((a, b) => a.depth - b.depth).map(s => s.id)
         .slice(0, DECK.minSkills - chosen.length));
     }
-    if (!chosen.length) add(chosen, pool.slice(-DECK.minSkills).map(s => s.id));
+    // Absolute last resort, and only if the level-appropriate pool is somehow
+    // empty: anything at all with a generator.
+    if (!chosen.length) {
+      add(chosen, SKILLS.filter(s => s.g <= grade && GEN[s.id])
+        .sort((a, b) => (grade - a.g) - (grade - b.g) || a.depth - b.depth)
+        .slice(0, DECK.minSkills).map(s => s.id));
+    }
 
     // Cap the variety. Sixteen cards spread over sixteen skills is one attempt
     // each, and mastery needs ten — so a deck like that can never move anything

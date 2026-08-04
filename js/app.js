@@ -264,13 +264,20 @@ const App = {
                                         : this.listenExpr(prob.q);
 
     const body = `
-      ${this.bar('Today', `<span class="chip mono">${pos}</span>`)}
+      ${this.session
+        ? this.bar(this.esc(STRANDS[skill.s].name), this.sessionBar())
+        : this.bar('Today', `<span class="chip mono">${pos}</span>`)}
       <div class="solve">
         <div class="prob" style="--c:var(--${skill.s})">
           <div class="skillname"><span class="dot"></span>${this.esc(skill.name)}</div>
           <div class="q ${wordy ? 'wordy' : ''}">${this.esc(prob.q)}</div>
           ${prob.svg || ''}
-          <div style="margin-top:6px">${listen}</div>
+          <div style="margin-top:6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+            ${listen}
+            ${lessonFor(skill.id) ? `<button class="listen"
+              onclick="App.lesson('${skill.id}')"><span class="ic">📘</span
+              ><span class="lbl">Lesson</span></button>` : ''}
+          </div>
           ${this.answerArea(prob)}
           <div id="verdict"></div>
         </div>
@@ -317,8 +324,11 @@ const App = {
           this.focus2 ? names[1] : names[0]} number</p>`;
     }
     const prefix = prob.fmt === 'money' ? '<span class="slash">$</span>' : '';
+    const suffix = prob.fmt === 'cents' ? '<span class="slash">¢</span>' : '';
     return `<div class="ansrow" style="margin-top:14px">${prefix}
-      <input class="ans" id="a1" inputmode="decimal" readonly value="${this.esc(this.typed)}"></div>`;
+      <input class="ans" id="a1" inputmode="decimal" readonly value="${this.esc(this.typed)}">
+      ${suffix}</div>${prob.fmt === 'money'
+        ? '<p class="dim small boxhint">Dollars and cents, like 3.50</p>' : ''}`;
   },
 
   // A keypad rather than the OS keyboard: on a tablet the system keyboard
@@ -396,6 +406,7 @@ const App = {
       if (!/^-?\d+$/.test(t) || !/^-?\d+$/.test(t2)) return null;
       return { x: +t, y: +t2 };
     }
+    if (fmt === 'cents') return /^\d+$/.test(t) ? +t : null;
     if (fmt === 'money') {
       const m = t.match(/^(\d+)(?:\.(\d{1,2}))?$/);
       if (!m) return null;
@@ -460,6 +471,7 @@ const App = {
       tag = hit ? hit.tag : 'unknown';
     }
     Progress.record(skill.id, right, tag);
+    if (this.session && right) this.session.right++;
     Sfx.play(right ? 'correct' : 'retry', right ? 0.5 : 0.3);
 
     const pad = document.getElementById('pad'); if (pad) pad.innerHTML = '';
@@ -532,6 +544,7 @@ const App = {
   },
 
   fmtAnswer(a, fmt) {
+    if (fmt === 'cents') return a + '\u00A2';
     if (a && typeof a === 'object') {
       if ('n' in a) return `${a.n}/${a.d}`;
       if ('q' in a) return `${a.q} remainder ${a.rem}`;
@@ -548,6 +561,7 @@ const App = {
   },
 
   next() {
+    if (this.session) return this.sessionNext();
     const deck = Progress.deck();
     deck.idx++;
     Progress.commit();
@@ -583,9 +597,9 @@ const App = {
       ? `<button class="btn wide big" style="margin-top:4px"
            onclick="App.startAfterLesson('${id}')">I'm ready — start practicing</button>`
       : `<button class="btn wide big" style="margin-top:4px"
-           onclick="App.practise('${id}')">Practice this</button>
+           onclick="App.practice('${id}', 'skill')">Practice this</button>
          <button class="btn ghost wide" style="margin-top:10px"
-           onclick="App.openSkill('${id}')">Back</button>`;
+           onclick="App.backFromLesson('${id}')">Back</button>`;
     this.el(`
       ${this.bar('Learn', `<span class="chip">${this.esc(GRADES[s.g].short)}</span>`)}
       <div class="card" style="border-left:3px solid var(--${s.s})">
@@ -621,6 +635,16 @@ const App = {
     this.taught(id);
     this._skipLesson = true;
     this.serve(id, (this.cur && this.cur.seed) || ((Date.now() % 100000) | 0));
+  },
+
+  // The lesson can be opened from inside a session; going back must land in the
+  // session, not on the map.
+  backFromLesson(id) {
+    if (this.session && this.session.skill === id) {
+      this._skipLesson = true;
+      return this.serve(id, (this.session.seed + this.session.i * 977) >>> 0);
+    }
+    this.openSkill(id);
   },
 
   // Remember that the lesson has been shown, so it does not reappear every day.
@@ -714,10 +738,71 @@ const App = {
     `);
   },
 
-  practice(id) {
-    this.tab = 'today';
-    this.serve(id, (Date.now() % 100000) >>> 0);
+  // A FOCUSED SESSION on one skill.
+  //
+  // Practicing a skill used to serve exactly one problem and then drop the child
+  // into the daily deck — so a quest threw you out after a single question and
+  // there was no way back to where you were. A session now runs a short set of
+  // that one skill and returns you to whatever you came from.
+  SESSION_LEN: 5,
+
+  practice(id, from, questId) {
+    this.session = { skill: id, from: from || 'map', questId: questId || null,
+                     i: 0, right: 0, seed: (Date.now() % 100000) >>> 0 };
+    this.tab = questId ? 'quests' : 'map';
     this.renderNav();
+    this.serve(id, this.session.seed);
+  },
+
+  sessionBar() {
+    const ss = this.session;
+    if (!ss) return '';
+    const q = ss.questId && QUESTS.find(x => x.id === ss.questId);
+    return `<button class="chiptap" onclick="App.leaveSession()">
+      ← ${this.esc(q ? q.name : 'Map')}</button>
+      <span class="chip mono">${Math.min(ss.i + 1, this.SESSION_LEN)} / ${this.SESSION_LEN}</span>`;
+  },
+
+  leaveSession() {
+    const ss = this.session;
+    this.session = null;
+    if (ss && ss.questId) return this.openQuest(ss.questId);
+    if (ss && ss.from === 'skill') return this.openSkill(ss.skill);
+    this.go('map');
+  },
+
+  sessionNext() {
+    const ss = this.session;
+    ss.i++;
+    if (ss.i >= this.SESSION_LEN) return this.sessionDone();
+    this._skipLesson = true;
+    this.serve(ss.skill, (ss.seed + ss.i * 977) >>> 0);
+  },
+
+  sessionDone() {
+    const ss = this.session;
+    const q = ss.questId && QUESTS.find(x => x.id === ss.questId);
+    const st = Progress.state(ss.skill);
+    const label = { mastered: 'Mastered', stale: 'Mastered', known: 'Getting there',
+                    seen: 'Keep going', unseen: 'Keep going' }[st];
+    this.session = null;
+    this.resetSay();
+    this.el(`
+      ${this.bar('Nice work')}
+      <div class="card" style="text-align:center;padding:26px 18px">
+        <div style="font-size:2.6rem">${ss.right >= 4 ? '🎉' : '💪'}</div>
+        <h2 style="margin-top:8px">${ss.right} out of ${this.SESSION_LEN}</h2>
+        <p class="dim" style="margin-top:6px">${this.esc(SKILL[ss.skill].name)} — ${label}</p>
+        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+          <button class="btn ghost" style="flex:1 1 46%"
+            onclick="App.practice('${ss.skill}', '${ss.from}', ${ss.questId ? `'${ss.questId}'` : 'null'})">Again</button>
+          ${lessonFor(ss.skill) ? `<button class="btn ghost" style="flex:1 1 46%"
+            onclick="App.lesson('${ss.skill}')">See the lesson</button>` : ''}
+          <button class="btn wide" style="flex:1 1 100%" onclick="${
+            q ? `App.openQuest('${ss.questId}')` : `App.openSkill('${ss.skill}')`
+          }">${q ? 'Back to ' + this.esc(q.name) : 'Back to the skill'}</button>
+        </div>
+      </div>`);
   },
 
   setGrade(g) { Progress.setGrade(g); this.go('map'); },
@@ -1021,7 +1106,8 @@ const App = {
           <h3 style="margin-top:5px">${this.esc(s.name)}</h3>
           <p class="dim small" style="margin-top:4px;font-style:italic">${this.esc(st.note)}</p>
           <button class="btn ghost wide" style="margin-top:10px"
-            onclick="App.practice('${st.s}')">${done ? 'Practice again' : 'Practice this'}</button>
+            onclick="App.practice('${st.s}', 'quest', '${q.id}')">${
+              done ? 'Practice again' : 'Practice this'}</button>
         </div>`;
       }).join('')}
       <div class="card">
