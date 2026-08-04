@@ -56,7 +56,11 @@ const Family = {
   summarise(profile) {
     const p = profile.p || {};
     const skills = p.skills || {};
-    const state = id => (skills[id] || {}).state || 'unseen';
+    // Progress.state() DERIVES the state from the record — there is no stored
+    // `state` field to read. An earlier version of this file read one, and the
+    // dashboard cheerfully reported "0 skills mastered" for a child with three,
+    // because `undefined || 'unseen'` is not an error, it is just wrong.
+    const state = id => Progress.state(id);
 
     const byGrade = {}, byStrand = {};
     (typeof SKILLS !== 'undefined' ? SKILLS : []).forEach(s => {
@@ -79,10 +83,9 @@ const Family = {
       .slice(0, 5);
 
     // Skills that were mastered and have gone quiet — the retention decay.
-    const stale = Object.entries(skills)
-      .filter(([, r]) => r.state === 'mastered' && r.lastCorrect &&
-                         Store.daysSince(r.lastCorrect) >= 14)
-      .map(([id]) => id).slice(0, 12);
+    const stale = Object.keys(skills)
+      .filter(id => state(id) === 'stale')
+      .slice(0, 12);
 
     let right = 0, wrong = 0;
     Object.values(skills).forEach(r => { right += r.right || 0; wrong += r.wrong || 0; });

@@ -260,6 +260,8 @@ const ERRORS = {
 // that runs out gives a clean stop and a reason to come back tomorrow.
 const DECK = {
   size: 16,
+  minSkills: 5,        // never fewer than this many DIFFERENT skills in a deck
+  maxSkills: 6,        // nor more — 16 cards over 16 skills never reaches mastery
   newSkills: 1,        // at most one brand-new skill per day
   reviewSkills: 3,     // interleaved with three the child has already met
   staleDays: 14,       // a mastered skill untouched this long comes back round

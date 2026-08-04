@@ -1,0 +1,321 @@
+/* Math Lab — maths from first grade to sixth.
+   A sibling to Wonder Lab, not a copy of it: same deep-ink family so the suite
+   feels like one thing, but squared paper instead of a field notebook, amber
+   instead of lime, and the nine strand colours doing the real work. Maths is
+   the subject where colour can carry meaning — every strand keeps its hue on
+   the map, in the deck and on the dashboard — so the chrome stays quiet and
+   lets it. */
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --ink:      #12161c;
+  --ink-2:    #191f28;
+  --ink-3:    #212a35;
+  --line:     #2c3846;
+  --line-2:   #3a4959;
+  --text:     #e9eef4;
+  --dim:      #93a3b5;
+  --amber:    #ffb43d;    /* primary accent */
+  --amber-d:  #c88519;
+  --good:     #62d18c;
+  --bad:      #ff7d6b;
+  --radius:   14px;
+  --radius-lg:20px;
+
+  --npv: #4fd6e8; --as: #9ee85f; --md: #ffc94a; --fr: #ff7a6b;
+  --dp:  #b088ff; --mt: #ffb04a; --geo: #6fb3ff; --da: #7fe3a0; --alg: #ff9ec7;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--ink);
+  color: var(--text);
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+  font-size: 16px;
+}
+
+/* squared paper, finer than Wonder Lab's field-notebook grid */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+#app {
+  position: relative; z-index: 1; max-width: 760px; margin: 0 auto;
+  padding: 0 16px calc(96px + env(safe-area-inset-bottom)); min-height: 100vh;
+}
+.screen { animation: rise .24s cubic-bezier(.2,.7,.3,1); }
+@keyframes rise { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+
+h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; }
+h2 { font-size: 1.16rem; font-weight: 700; letter-spacing: -.01em; }
+h3 { font-size: 1rem;    font-weight: 700; }
+.dim { color: var(--dim); }
+.small { font-size: .84rem; }
+.mono { font-variant-numeric: tabular-nums;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* ── top bar ── */
+.bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 0 12px; position: sticky; top: 0; z-index: 20;
+  background: linear-gradient(180deg, var(--ink) 74%, rgba(18,22,28,0));
+}
+.bar .grow { flex: 1; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--ink-3); border: 1px solid var(--line);
+  padding: 6px 12px; border-radius: 999px;
+  font-size: .84rem; font-weight: 600; white-space: nowrap;
+}
+.chip.flame { border-color: #a2622a; color: var(--amber); }
+/* A tappable chip. Deliberately NOT `class="chip btn"` — .btn owns a solid
+   amber fill, so a chip carrying both classes came out as an amber slab, and
+   the selected one had amber text on an amber ground and read as blank. */
+.chiptap {
+  font: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--ink-3); border: 1px solid var(--line); color: var(--text);
+  padding: 6px 12px; border-radius: 999px;
+  font-size: .84rem; font-weight: 600; white-space: nowrap;
+}
+.chiptap:active { background: var(--line); }
+.chiptap.on { border-color: var(--amber); color: var(--amber); background: rgba(255,180,61,.12); }
+.chiptap:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* ── buttons ── */
+.btn {
+  font: inherit; font-weight: 700; cursor: pointer;
+  background: var(--amber); color: #29190a; border: none;
+  padding: 12px 20px; border-radius: 12px; font-size: .98rem;
+  transition: filter .12s, transform .06s;
+}
+.btn:active { transform: translateY(1px); filter: brightness(.94); }
+.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+.btn.ghost:active { background: var(--ink-3); }
+.btn.big { padding: 15px 26px; font-size: 1.06rem; border-radius: 14px; }
+.btn.wide { display: block; width: 100%; }
+.btn:disabled { opacity: .4; pointer-events: none; }
+.btn:focus-visible, .key:focus-visible,
+.nav button:focus-visible, .sk:focus-visible {
+  outline: 2px solid var(--amber); outline-offset: 2px;
+}
+
+/* ── cards ── */
+.card {
+  background: var(--ink-2); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px;
+}
+.card.tight { padding: 12px; }
+
+/* ── the problem ── */
+.prob {
+  background: var(--ink-2); border: 1px solid var(--line);
+  border-radius: 22px; padding: 22px 18px; text-align: center;
+  box-shadow: 0 14px 34px rgba(0,0,0,.4);
+}
+.prob .skillname {
+  font-size: .76rem; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--dim); display: flex; align-items: center;
+  justify-content: center; gap: 7px;
+}
+.prob .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--c, var(--amber)); }
+.prob .q {
+  font-size: clamp(1.5rem, 7vw, 2.2rem); font-weight: 700; line-height: 1.3;
+  margin: 14px 0 6px; letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+.prob .q.wordy { font-size: clamp(1.05rem, 4.4vw, 1.3rem); font-weight: 600; line-height: 1.45; }
+.prob svg { max-width: 100%; height: auto; display: block; margin: 12px auto; }
+
+/* ── answer entry ── */
+.ansrow { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
+.ans {
+  font: inherit; font-size: 1.8rem; font-weight: 800; text-align: center;
+  font-variant-numeric: tabular-nums;
+  width: 100%; max-width: 240px; padding: 12px 10px;
+  background: var(--ink-3); border: 2px solid var(--line-2);
+  border-radius: 14px; color: var(--text); caret-color: var(--amber);
+}
+.ans:focus { outline: none; border-color: var(--amber); }
+.ans.small { max-width: 110px; font-size: 1.4rem; }
+.ansrow .slash { font-size: 1.6rem; color: var(--dim); font-weight: 700; }
+.fracbox { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; }
+.fracbox .rule { width: 96px; height: 2px; background: var(--dim); }
+
+/* keypad — big targets, thumb-reachable, no OS keyboard on a tablet */
+.keys {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin-top: 14px; max-width: 330px; margin-left: auto; margin-right: auto;
+}
+.key {
+  font: inherit; font-size: 1.35rem; font-weight: 700; cursor: pointer;
+  background: var(--ink-3); border: 1px solid var(--line);
+  color: var(--text); border-radius: 12px; padding: 14px 0;
+  font-variant-numeric: tabular-nums;
+  transition: background .1s, transform .06s;
+}
+.key:active { transform: translateY(1px); background: var(--line); }
+.key.wide { grid-column: span 2; }
+.key.go { background: var(--amber); color: #29190a; }
+.key.del { color: var(--dim); font-size: 1.15rem; }
+
+/* multiple choice, for questions whose answer is not a number */
+.opts { display: grid; gap: 8px; margin-top: 14px; }
+.opt {
+  font: inherit; font-size: 1.1rem; font-weight: 700; cursor: pointer;
+  background: var(--ink-3); border: 1px solid var(--line); color: var(--text);
+  border-radius: 12px; padding: 15px 14px; text-align: center;
+}
+.opt:active { background: var(--line); }
+.opt.right { border-color: var(--good); color: var(--good); }
+.opt.sel   { border-color: var(--amber); color: var(--amber); background: rgba(255,180,61,.12); }
+.opt.wrong { border-color: var(--bad); color: var(--bad); }
+@media (min-width: 420px) { .opts.two { grid-template-columns: 1fr 1fr; } }
+
+/* ── the verdict, and naming the mistake ── */
+.verdict { margin-top: 14px; border-radius: 16px; padding: 15px 16px; text-align: left; }
+.verdict.ok  { background: rgba(98,209,140,.1); border: 1px solid rgba(98,209,140,.35); }
+.verdict.no  { background: rgba(255,125,107,.09); border: 1px solid rgba(255,125,107,.32); }
+.verdict h3 { font-size: 1.02rem; margin-bottom: 5px; }
+.verdict.ok h3 { color: var(--good); }
+.verdict.no h3 { color: var(--bad); }
+.verdict p { color: var(--text); line-height: 1.5; font-size: .96rem; }
+.verdict .fix {
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line-2);
+  color: var(--dim); font-size: .92rem; line-height: 1.5;
+}
+.verdict .fix b { color: var(--amber); font-weight: 700; }
+
+/* ── Listen ── */
+.listen {
+  font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer;
+  background: var(--ink-3); border: 1px solid var(--line); color: var(--dim);
+  border-radius: 999px; padding: 6px 13px 6px 10px;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.listen .ic { font-size: .72rem; }
+.listen.on { border-color: var(--amber); color: var(--amber); }
+.listen:active { background: var(--line); }
+
+/* ── progress bars ── */
+.meter { height: 7px; border-radius: 999px; background: var(--ink-3);
+         overflow: hidden; display: flex; }
+.meter i { display: block; height: 100%; }
+.meter i.mastered { background: var(--good); }
+.meter i.known    { background: var(--amber); }
+.meter i.seen     { background: var(--line-2); }
+
+/* ── the skill map ── */
+.strand { margin-bottom: 18px; }
+.strand > h2 { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.strand > h2 .sw { width: 11px; height: 11px; border-radius: 3px; background: var(--c); }
+.strand > h2 .n { margin-left: auto; font-size: .8rem; color: var(--dim); font-weight: 600; }
+.sks { display: grid; gap: 7px; grid-template-columns: 1fr; }
+@media (min-width: 560px) { .sks { grid-template-columns: 1fr 1fr; } }
+.sk {
+  text-align: left; font: inherit; color: var(--text); cursor: pointer;
+  background: var(--ink-2); border: 1px solid var(--line);
+  border-left: 3px solid var(--c); border-radius: 12px;
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 3px;
+}
+.sk:active { background: var(--ink-3); }
+.sk .t { font-size: .95rem; font-weight: 600; line-height: 1.25; }
+.sk .m { font-size: .76rem; color: var(--dim); display: flex; align-items: center; gap: 6px; }
+.sk .pip { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); flex: none; }
+.sk.known    .pip { background: var(--amber); }
+.sk.mastered .pip { background: var(--good); }
+.sk.stale    .pip { background: var(--dp); }
+.sk.locked { opacity: .5; }
+.sk.locked .t { font-weight: 500; }
+
+/* ── nav ── */
+.nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: flex; background: rgba(18,22,28,.94);
+  backdrop-filter: blur(12px); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav button {
+  flex: 1; font: inherit; font-size: .68rem; font-weight: 700; cursor: pointer;
+  background: none; border: none; color: var(--dim);
+  padding: 9px 2px 8px; display: flex; flex-direction: column;
+  align-items: center; gap: 3px; letter-spacing: .01em;
+}
+.nav button.on { color: var(--amber); }
+.nav .n-ic { font-size: 1.24rem; line-height: 1; }
+
+/* ── dashboard ── */
+.grid2 { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.stat { background: var(--ink-2); border: 1px solid var(--line);
+        border-radius: 14px; padding: 12px 14px; }
+.stat b { display: block; font-size: 1.5rem; font-weight: 800;
+          font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.stat span { font-size: .74rem; text-transform: uppercase;
+             letter-spacing: .07em; color: var(--dim); }
+.spark { display: flex; align-items: flex-end; gap: 2px; height: 42px; margin-top: 8px; }
+.spark i { flex: 1; background: var(--line-2); border-radius: 2px 2px 0 0; min-height: 2px; }
+.spark i.hot { background: var(--amber); }
+
+.errrow { display: flex; align-items: center; gap: 10px; padding: 9px 0;
+          border-bottom: 1px solid var(--line); }
+.errrow:last-child { border-bottom: none; }
+.errrow .n { font-variant-numeric: tabular-nums; font-weight: 800;
+             color: var(--bad); min-width: 26px; }
+.errrow .t { flex: 1; font-size: .93rem; line-height: 1.35; }
+
+table.rep { width: 100%; border-collapse: collapse; font-size: .88rem; }
+table.rep th, table.rep td { text-align: left; padding: 8px 6px;
+                             border-bottom: 1px solid var(--line); }
+table.rep th { font-size: .72rem; text-transform: uppercase;
+               letter-spacing: .07em; color: var(--dim); font-weight: 700; }
+table.rep td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── layout up-scaling. Jacob checks a phone AND a laptop. ── */
+@media (min-width: 720px) {
+  body { font-size: 16.5px; }
+  #app { padding: 60px 24px 40px; max-width: 840px; }
+  .prob { padding: 26px 26px; }
+  /* The nav moves to the top on a laptop. It has to be FIXED, not sticky: it
+     sits after #app in the DOM, and #app is min-height 100vh, so a sticky
+     top-aligned bar renders a full screen below the fold and reads as missing
+     entirely. */
+  .nav {
+    position: fixed; top: 0; bottom: auto;
+    background: rgba(18,22,28,.94); border-top: none;
+    border-bottom: 1px solid var(--line);
+    justify-content: center; gap: 4px;
+  }
+  .nav button { flex: 0 0 auto; flex-direction: row; gap: 7px;
+                font-size: .88rem; padding: 15px 16px; }
+  .nav .n-ic { font-size: 1rem; }
+  .bar { top: 56px; }
+  .keys { max-width: 360px; }
+}
+@media (min-width: 860px) {
+  #app { max-width: 980px; }
+  .sks { grid-template-columns: 1fr 1fr 1fr; }
+  .prob .q { font-size: 2.25rem; }
+  /* Problem and keypad side by side. Stacked, the keys sit most of a screen
+     below the question on a laptop and the child loses their place. */
+  .solve { display: grid; grid-template-columns: minmax(0,1fr) 340px;
+           gap: 22px; align-items: start; }
+  .solve .prob { margin: 0; }
+  .solve .keys { margin-top: 0; max-width: none; }
+  .solve #pad { position: sticky; top: 120px; }
+}
+@media (min-width: 1500px) { #app { max-width: 1180px; }
+  .sks { grid-template-columns: repeat(4, 1fr); }
+  .solve { grid-template-columns: minmax(0,1fr) 380px; } }
+@media (max-width: 360px) { .prob { padding: 16px 12px; } .key { font-size: 1.2rem; padding: 12px 0; } }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

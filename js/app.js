@@ -1,0 +1,700 @@
+// Math Lab — app shell.
+//
+// Five screens, all driven off the skill graph:
+//   Today  a FINITE dealt deck, interleaved across skills. Finite on purpose:
+//          an endless scroll trains skimming, a deck that runs out gives a
+//          clean stop and a reason to come back tomorrow.
+//   Map    the skill graph as a map — what is mastered, what is next, and for
+//          anything locked, exactly which prerequisite is missing.
+//   Report the child's own progress.
+//   Grown-ups  the parent dashboard, across every app in the suite.
+//
+// The answer is TYPED, not chosen, for anything whose answer is a number.
+// Multiple choice on arithmetic teaches elimination rather than computation,
+// and four options hand over the plausible wrong answers for free. The named
+// mistakes still run — as predicates against whatever was actually typed, which
+// also means an error nobody anticipated shows up as a no-match instead of
+// silently landing in a bucket it does not belong to.
+
+const App = {
+  tab: 'today',
+  cur: null,          // the problem on screen
+  typed: '',
+  typed2: '',
+  focus2: false,      // typing into the second box (denominator / remainder)
+  answered: false,
+
+  // ── boot ──
+  init() {
+    this.checkForUpdate();          // unawaited on purpose — never blocks boot
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    const has = Progress.init();
+    if (has) { Progress.touchDay(); Progress.commit(); this.go('today'); }
+    else this.welcome();
+  },
+
+  // An installed service worker plus edge HTML caching can pin a device to an
+  // old build for hours with no error anywhere. Compare the id baked into the
+  // page against version.json fetched no-store; on a mismatch bin every cache
+  // and reload exactly once.
+  async checkForUpdate() {
+    try {
+      const meta = document.querySelector('meta[name="build"]');
+      const running = meta ? meta.getAttribute('content') : null;
+      const res = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) return;
+      const { build } = await res.json();
+      if (!build || !running || build === running) return;
+      if (sessionStorage.getItem('mathlab-updating') === build) return;   // never loop
+      sessionStorage.setItem('mathlab-updating', build);
+      for (const k of await caches.keys()) await caches.delete(k);
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) await r.unregister();
+      location.replace(location.pathname + '?b=' + build);
+    } catch (e) { /* offline: keep running what we have */ }
+  },
+
+  el(html) {
+    document.getElementById('app').innerHTML = `<div class="screen">${html}</div>`;
+    window.scrollTo(0, 0);
+  },
+
+  esc(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  },
+
+  go(tab) {
+    this.tab = tab;
+    this.resetSay();
+    ({ today: () => this.today(), map: () => this.map(),
+       report: () => this.report(), parent: () => this.parent() }[tab]
+      || (() => this.today()))();
+    this.renderNav();
+  },
+
+  renderNav() {
+    const items = [['today', '🎯', 'Today'], ['map', '🗺️', 'Map'],
+                   ['report', '📈', 'Progress'], ['parent', '👋', 'Grown-ups']];
+    document.getElementById('nav').innerHTML = items.map(([k, ic, label]) =>
+      `<button class="${this.tab === k ? 'on' : ''}" onclick="App.go('${k}')">
+        <span class="n-ic">${ic}</span>${label}</button>`).join('');
+  },
+
+  // ── Listen buttons ──
+  // Narration is opt-in per block, never automatic. Long text goes through an
+  // index rather than into the onclick attribute: a string containing an
+  // apostrophe would otherwise break the handler it is embedded in.
+  _sayReg: [], _saying: null,
+  resetSay() { this._sayReg = []; this._saying = null; AudioLib.stop(); },
+
+  listenBtn(...parts) {
+    const clean = parts.filter(p => p && String(p).trim());
+    if (!clean.length) return '';
+    const i = this._sayReg.push(clean) - 1;
+    return `<button class="listen" data-say="${i}" aria-label="Listen"
+      onclick="event.stopPropagation();App.say(${i})">
+      <span class="ic">▶</span><span class="lbl">Listen</span></button>`;
+  },
+
+  // An expression has no clip of its own — it is composed from the number
+  // vocabulary by numspeak. Prose has its own recording.
+  listenExpr(text) {
+    const parts = NumSpeak.expr(text);
+    if (!parts.length) return '';
+    const i = this._sayReg.push({ parts }) - 1;
+    return `<button class="listen" data-say="${i}" aria-label="Listen"
+      onclick="event.stopPropagation();App.say(${i})">
+      <span class="ic">▶</span><span class="lbl">Listen</span></button>`;
+  },
+
+  say(i) {
+    const item = this._sayReg[i];
+    if (!item) return;
+    if (this._saying === i) { AudioLib.stop(); this._saying = null; return this.syncListen(); }
+    this._saying = i;
+    this.syncListen();
+    const done = Array.isArray(item)
+      ? AudioLib.speakSeq(item)
+      : AudioLib.speakParts(item.parts);
+    done.then(() => {
+      if (this._saying === i) { this._saying = null; this.syncListen(); }
+    });
+  },
+
+  // Repaint the buttons in place. A full re-render would clear what the child
+  // has already typed into the answer box.
+  syncListen() {
+    document.querySelectorAll('.listen').forEach(b => {
+      const on = +b.dataset.say === this._saying;
+      b.classList.toggle('on', on);
+      b.querySelector('.ic').textContent = on ? '■' : '▶';
+      b.querySelector('.lbl').textContent = on ? 'Stop' : 'Listen';
+    });
+  },
+
+  // ── welcome ──
+  welcome() {
+    document.getElementById('nav').innerHTML = '';
+    this.el(`
+      <div style="padding:56px 6px 18px;text-align:center">
+        <div style="font-size:3.6rem;line-height:1">🧮</div>
+        <h1 style="margin-top:10px;font-size:2rem">Math Lab</h1>
+        <p class="dim" style="margin-top:8px">First grade to sixth, one step at a time.</p>
+      </div>
+      <div class="card">
+        <h2>What should we call you?</h2>
+        <input id="nm" maxlength="18" placeholder="Your name"
+          style="width:100%;margin-top:12px;padding:14px;border-radius:12px;
+                 background:var(--ink-3);border:1px solid var(--line);
+                 color:var(--text);font:inherit;font-size:1.05rem">
+        <h2 style="margin-top:18px">Which grade?</h2>
+        <p class="dim small" style="margin-top:4px">You can change this whenever you like.</p>
+        <div class="opts two" style="grid-template-columns:repeat(3,1fr)">
+          ${[1, 2, 3, 4, 5, 6].map(g =>
+            `<button class="opt" data-g="${g}" onclick="App.pickGrade(${g})">${g}</button>`).join('')}
+        </div>
+        <button class="btn wide big" style="margin-top:16px" onclick="App.start()">Start</button>
+      </div>`);
+    this._grade = 1;
+    setTimeout(() => {
+      const i = document.getElementById('nm'); if (i) i.focus();
+      this.pickGrade(1);
+    }, 80);
+  },
+
+  pickGrade(g) {
+    this._grade = g;
+    // .sel, not .right: green means "you answered correctly" everywhere else
+    // in this app, and reusing it for "selected" teaches the colour wrong.
+    document.querySelectorAll('.opt[data-g]').forEach(b =>
+      b.classList.toggle('sel', +b.dataset.g === g));
+  },
+
+  start() {
+    const n = (document.getElementById('nm').value || '').trim() || 'Explorer';
+    Progress.create(n, this._grade || 1);
+    this.go('today');
+  },
+
+  // ── TODAY: the dealt deck ──
+  today() {
+    const p = Progress.p, deck = Progress.deck();
+    const done = deck.idx >= deck.served.length;
+    const streak = p.dayStreak > 1 ? `<span class="chip flame">🔥 ${p.dayStreak}</span>` : '';
+
+    if (done) {
+      const today = Store.dayKey();
+      const log = (p.dayLog || []).find(d => d.d === today) || { asked: 0, right: 0 };
+      return this.el(`
+        ${this.bar('Today', streak)}
+        <div class="card" style="text-align:center;padding:30px 18px">
+          <div style="font-size:3rem">✅</div>
+          <h2 style="margin-top:10px">That is today's deck finished.</h2>
+          <p class="dim" style="margin-top:8px">
+            ${log.right} right out of ${log.asked}. Come back tomorrow for a new one —
+            a skill counts as mastered only after two different days.</p>
+          <button class="btn ghost wide" style="margin-top:16px"
+            onclick="App.go('report')">See what you have learned</button>
+        </div>
+        ${this.errorCard()}`);
+    }
+
+    const skillId = deck.served[deck.idx];
+    this.serve(skillId, deck.seed + deck.idx * 101);
+  },
+
+  bar(title, right) {
+    return `<div class="bar"><h1>${title}</h1><div class="grow"></div>${right || ''}</div>`;
+  },
+
+  // ── serving one problem ──
+  serve(skillId, seed) {
+    const s = SKILL[skillId];
+    const gen = GEN[skillId];
+    if (!gen) { this.next(); return; }
+    let prob;
+    try { prob = gen(mulberry32(seed >>> 0)); }
+    catch (e) { this.next(); return; }
+
+    this.cur = { p: prob, skill: s, seed };
+    this.typed = ''; this.typed2 = ''; this.focus2 = false; this.answered = false;
+    Progress.markSeen(skillId);
+    this.paint();
+  },
+
+  paint() {
+    const { p: prob, skill } = this.cur;
+    const deck = Progress.deck();
+    const pos = `${Math.min(deck.idx + 1, deck.served.length)} / ${deck.served.length}`;
+    const wordy = prob.q.length > 42;
+    const readAloud = Progress.p.readAloud;
+
+    this.resetSay();
+    // Word problems have their own recording; bare expressions are composed
+    // from the number vocabulary.
+    const listen = wordy && AudioLib.has(prob.q)
+      ? this.listenBtn(prob.q) : this.listenExpr(prob.q);
+
+    const body = `
+      ${this.bar('Today', `<span class="chip mono">${pos}</span>`)}
+      <div class="solve">
+        <div class="prob" style="--c:var(--${skill.s})">
+          <div class="skillname"><span class="dot"></span>${this.esc(skill.name)}</div>
+          <div class="q ${wordy ? 'wordy' : ''}">${this.esc(prob.q)}</div>
+          ${prob.svg || ''}
+          <div style="margin-top:6px">${listen}</div>
+          ${this.answerArea(prob)}
+          <div id="verdict"></div>
+        </div>
+        <div id="pad">${this.answered ? '' : this.pad(prob)}</div>
+      </div>`;
+    this.el(body);
+    if (readAloud && !this.answered) setTimeout(() => this.say(0), 250);
+  },
+
+  answerArea(prob) {
+    if (prob.fmt === 'choice' || prob.fmt === 'multi') {
+      const opts = prob.options || [];
+      return `<div class="opts ${opts.length <= 3 ? 'two' : ''}" id="opts">
+        ${opts.map((o, i) => `<button class="opt" data-o="${i}"
+          onclick="App.chose(${i})">${this.esc(o)}</button>`).join('')}</div>`;
+    }
+    if (prob.fmt === 'fraction') {
+      return `<div class="ansrow" style="margin-top:14px">
+        <div class="fracbox">
+          <input class="ans small" id="a1" inputmode="numeric" readonly value="${this.esc(this.typed)}">
+          <div class="rule"></div>
+          <input class="ans small" id="a2" inputmode="numeric" readonly value="${this.esc(this.typed2)}">
+        </div></div>`;
+    }
+    if (prob.fmt === 'quotrem') {
+      return `<div class="ansrow" style="margin-top:14px">
+        <input class="ans small" id="a1" inputmode="numeric" readonly value="${this.esc(this.typed)}">
+        <span class="slash small dim">r</span>
+        <input class="ans small" id="a2" inputmode="numeric" readonly value="${this.esc(this.typed2)}">
+      </div>`;
+    }
+    const prefix = prob.fmt === 'money' ? '<span class="slash">$</span>' : '';
+    return `<div class="ansrow" style="margin-top:14px">${prefix}
+      <input class="ans" id="a1" inputmode="decimal" readonly value="${this.esc(this.typed)}"></div>`;
+  },
+
+  // A keypad rather than the OS keyboard: on a tablet the system keyboard
+  // covers the problem the child is trying to read.
+  pad(prob) {
+    if (prob.fmt === 'choice' || prob.fmt === 'multi') return '';
+    const dec = ['decimal1', 'decimal2', 'decimal4', 'money'].includes(prob.fmt);
+    const two = ['fraction', 'quotrem'].includes(prob.fmt);
+    const neg = ['as.integers', 'npv.abs', 'npv.integers'].includes(this.cur.skill.id);
+    const extra = dec ? '.' : (neg ? '−' : (two ? '↹' : ''));
+    return `<div class="keys">
+      ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n =>
+        `<button class="key" onclick="App.k('${n}')">${n}</button>`).join('')}
+      <button class="key ${extra ? '' : 'del'}" onclick="App.k('${extra || 'del'}')">${extra || '⌫'}</button>
+      <button class="key" onclick="App.k('0')">0</button>
+      ${extra ? `<button class="key del" onclick="App.k('del')">⌫</button>` : ''}
+      <button class="key go ${extra ? 'wide' : 'wide'}" onclick="App.submit()">Check</button>
+    </div>`;
+  },
+
+  k(ch) {
+    if (this.answered) return;
+    const two = ['fraction', 'quotrem'].includes(this.cur.p.fmt);
+    if (ch === '↹') { this.focus2 = !this.focus2; return this.repaintAns(); }
+    const key = (two && this.focus2) ? 'typed2' : 'typed';
+    if (ch === 'del') this[key] = this[key].slice(0, -1);
+    else if (ch === '−') this[key] = this[key].startsWith('−') ? this[key].slice(1) : '−' + this[key];
+    else if (ch === '.') { if (!this[key].includes('.')) this[key] += '.'; }
+    else if (this[key].length < 9) this[key] += ch;
+    // Typing the first box full moves to the second by itself; the ↹ key is
+    // there for going back.
+    if (two && !this.focus2 && this[key].length >= 1 && ch !== 'del') { /* stay */ }
+    this.repaintAns();
+    Sfx.play('tap', 0.25);
+  },
+
+  repaintAns() {
+    const a1 = document.getElementById('a1'), a2 = document.getElementById('a2');
+    if (a1) { a1.value = this.typed; a1.style.borderColor = this.focus2 ? '' : 'var(--amber)'; }
+    if (a2) { a2.value = this.typed2; a2.style.borderColor = this.focus2 ? 'var(--amber)' : ''; }
+  },
+
+  chose(i) {
+    if (this.answered) return;
+    this.typed = this.cur.p.options[i];
+    this.submit();
+  },
+
+  // ── parsing and comparing, exactly ──
+  parse(fmt) {
+    const t = this.typed.replace('−', '-').trim();
+    const t2 = this.typed2.replace('−', '-').trim();
+    if (fmt === 'choice' || fmt === 'multi') return this.typed || null;
+    if (fmt === 'fraction') {
+      if (!/^-?\d+$/.test(t) || !/^\d+$/.test(t2) || +t2 === 0) return null;
+      return { n: +t, d: +t2 };
+    }
+    if (fmt === 'quotrem') {
+      if (!/^-?\d+$/.test(t) || !/^\d+$/.test(t2)) return null;
+      return { q: +t, rem: +t2 };
+    }
+    if (fmt === 'money') {
+      const m = t.match(/^(\d+)(?:\.(\d{1,2}))?$/);
+      if (!m) return null;
+      return +m[1] * 100 + (m[2] ? +(m[2].padEnd(2, '0')) : 0);
+    }
+    if (fmt && fmt.startsWith('decimal')) {
+      const dp = +fmt.slice(7);
+      const m = t.match(/^(-?)(\d*)(?:\.(\d*))?$/);
+      if (!m || (!m[2] && !m[3])) return null;
+      const frac = (m[3] || '').padEnd(dp, '0').slice(0, dp);
+      return { v: (m[1] ? -1 : 1) * +((m[2] || '0') + frac), dp };
+    }
+    return /^-?\d+$/.test(t) ? +t : null;
+  },
+
+  // Fractions compare by VALUE, except where the question asked for simplest
+  // form — there 14/10 is a real, named mistake and not a right answer.
+  same(a, b, fmt, strict) {
+    if (a === null || a === undefined || b === null || b === undefined) return false;
+    if (typeof a === 'object' && typeof b === 'object') {
+      if ('n' in a && 'n' in b) {
+        if (strict) return a.n === b.n && a.d === b.d;
+        return a.n * b.d === b.n * a.d;
+      }
+      if ('q' in a && 'q' in b) return a.q === b.q && a.rem === b.rem;
+      if ('v' in a && 'v' in b) return a.v * Math.pow(10, b.dp) === b.v * Math.pow(10, a.dp);
+      return false;
+    }
+    return a === b;
+  },
+
+  STRICT_FORM: ['fr.simplify', 'dp.dec.frac', 'dp.percent'],
+
+  submit() {
+    if (this.answered) return;
+    const { p: prob, skill } = this.cur;
+    const got = this.parse(prob.fmt);
+    if (got === null) { Sfx.play('retry', 0.3); return; }
+
+    const strict = this.STRICT_FORM.includes(skill.id);
+    const right = this.same(got, prob.a, prob.fmt, strict);
+    this.answered = true;
+
+    // The named mistake, matched against what was actually typed.
+    let tag = null;
+    if (!right) {
+      const hit = (prob.slips || []).find(s => this.same(got, s.v, prob.fmt, strict));
+      tag = hit ? hit.tag : 'unknown';
+    }
+    Progress.record(skill.id, right, tag);
+    Sfx.play(right ? 'correct' : 'retry', right ? 0.5 : 0.3);
+
+    const pad = document.getElementById('pad'); if (pad) pad.innerHTML = '';
+    if (prob.fmt === 'choice' || prob.fmt === 'multi') {
+      document.querySelectorAll('.opt[data-o]').forEach(b => {
+        const v = prob.options[+b.dataset.o];
+        if (v === prob.a) b.classList.add('right');
+        else if (v === this.typed && !right) b.classList.add('wrong');
+      });
+    }
+    this.showVerdict(right, tag, prob);
+  },
+
+  showVerdict(right, tag, prob) {
+    const v = document.getElementById('verdict');
+    if (!v) return;
+    const shown = this.fmtAnswer(prob.a, prob.fmt);
+
+    if (right) {
+      v.innerHTML = `<div class="verdict ok">
+          <h3>Right — ${this.esc(shown)}</h3>
+          <p>${this.esc(G.pick(mulberry32(Date.now() & 0xffff),
+             ['That is it.', 'Exactly right.', 'Good — straight through.',
+              'Correct.', 'Nicely done.']))}</p>
+        </div>
+        <button class="btn wide big" style="margin-top:12px" onclick="App.next()">Next</button>`;
+    } else {
+      const e = ERRORS[tag] || ERRORS.unknown;
+      v.innerHTML = `<div class="verdict no">
+          <h3>${this.esc(e.name)}</h3>
+          <p>${this.esc(e.say)}</p>
+          <div class="fix"><b>The step:</b> ${this.esc(e.fix)}</div>
+          <div class="fix" style="border:none;padding-top:6px">
+            The answer is <b>${this.esc(shown)}</b>.</div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn ghost" style="flex:1" onclick="App.retry()">Try it again</button>
+          <button class="btn" style="flex:1" onclick="App.next()">Next</button>
+        </div>`;
+    }
+    // The explanation is the most valuable text in the app, so it gets a Listen
+    // of its own rather than sharing the question's.
+    const e = right ? null : (ERRORS[tag] || ERRORS.unknown);
+    if (e) {
+      const btn = this.listenBtn(e.name, e.say, e.fix);
+      if (btn) v.querySelector('.verdict').insertAdjacentHTML('beforeend',
+        `<div style="margin-top:10px">${btn}</div>`);
+    }
+  },
+
+  fmtAnswer(a, fmt) {
+    if (a && typeof a === 'object') {
+      if ('n' in a) return `${a.n}/${a.d}`;
+      if ('q' in a) return `${a.q} remainder ${a.rem}`;
+      if ('v' in a) return G.dec(a.v, a.dp);
+    }
+    if (fmt === 'money') return G.money(a);
+    return String(a);
+  },
+
+  retry() {
+    this.typed = ''; this.typed2 = ''; this.answered = false;
+    this.paint();
+  },
+
+  next() {
+    const deck = Progress.deck();
+    deck.idx++;
+    Progress.commit();
+    this.go('today');
+  },
+
+  // ── the mistakes worth noticing ──
+  errorCard() {
+    const top = Progress.topErrors(4);
+    if (!top.length) return '';
+    return `<div class="card">
+      <h2>What has been tripping you up</h2>
+      <p class="dim small" style="margin-top:2px">The last three weeks.</p>
+      <div style="margin-top:10px">
+        ${top.map(e => `<div class="errrow">
+            <span class="n">${e.n}×</span>
+            <span class="t">${this.esc((ERRORS[e.tag] || ERRORS.unknown).name)}</span>
+          </div>`).join('')}
+      </div></div>`;
+  },
+
+  // ── MAP ──
+  map() {
+    const p = Progress.p;
+    const grades = [1, 2, 3, 4, 5, 6];
+    const g = p.grade;
+    const c = Progress.counts(g);
+    const total = SKILLS.filter(s => s.g === g).length;
+
+    const strands = Object.keys(STRANDS).map(key => {
+      const rows = SKILLS.filter(s => s.g === g && s.s === key);
+      if (!rows.length) return '';
+      const done = rows.filter(s => ['mastered', 'stale'].includes(Progress.state(s.id))).length;
+      return `<div class="strand" style="--c:var(--${key})">
+        <h2><span class="sw"></span>${this.esc(STRANDS[key].name)}
+          <span class="n mono">${done}/${rows.length}</span></h2>
+        <div class="sks">${rows.map(s => this.skillCard(s)).join('')}</div>
+      </div>`;
+    }).join('');
+
+    this.el(`
+      ${this.bar('Map')}
+      <div class="card tight">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${grades.map(n => `<button class="chiptap ${n === g ? 'on' : ''}"
+            onclick="App.setGrade(${n})">Grade ${n}</button>`).join('')}
+        </div>
+        <div class="meter" style="margin-top:12px">
+          <i class="mastered" style="width:${(c.mastered + c.stale) / total * 100}%"></i>
+          <i class="known"    style="width:${c.known / total * 100}%"></i>
+          <i class="seen"     style="width:${c.seen / total * 100}%"></i>
+        </div>
+        <p class="dim small" style="margin-top:8px">
+          ${c.mastered} mastered · ${c.known} getting there · ${c.stale} needs a look ·
+          ${total - c.mastered - c.known - c.stale} to come</p>
+      </div>
+      ${strands}`);
+  },
+
+  skillCard(s) {
+    const st = Progress.state(s.id);
+    const locked = !Progress.unlocked(s.id) && st === 'unseen';
+    const acc = Progress.accuracy(s.id);
+    const label = { unseen: 'Not started', seen: 'Started', known: 'Getting there',
+                    mastered: 'Mastered', stale: 'Needs a look' }[st];
+    return `<button class="sk ${st} ${locked ? 'locked' : ''}" style="--c:var(--${s.s})"
+      onclick="App.openSkill('${s.id}')">
+      <span class="t">${this.esc(s.name)}</span>
+      <span class="m"><span class="pip"></span>${locked ? 'Locked' : label}
+        ${acc !== null ? `· <span class="mono">${Math.round(acc * 100)}%</span>` : ''}</span>
+    </button>`;
+  },
+
+  openSkill(id) {
+    const s = SKILL[id];
+    const blockers = Progress.blockers(id);
+    const st = Progress.state(id);
+    const acc = Progress.accuracy(id);
+    const r = Progress.p.skills[id];
+    this.resetSay();
+    this.el(`
+      ${this.bar('Skill', `<button class="chiptap" onclick="App.go('map')">Back</button>`)}
+      <div class="card" style="border-left:3px solid var(--${s.s})">
+        <h2>${this.esc(s.name)}</h2>
+        <p class="dim small mono" style="margin-top:4px">${this.esc(s.range)}</p>
+        <p class="dim small" style="margin-top:8px">
+          ${GRADES[s.g].name} · ${this.esc(STRANDS[s.s].name)}</p>
+        ${r ? `<p style="margin-top:10px">Seen ${r.seen} · right ${r.right} · wrong ${r.wrong}
+           ${acc !== null ? `· <b>${Math.round(acc * 100)}%</b>` : ''}</p>` : ''}
+      </div>
+      ${blockers.length ? `<div class="card">
+        <h3>You need these first</h3>
+        <div class="sks" style="margin-top:8px">
+          ${blockers.map(b => this.skillCard(SKILL[b])).join('')}</div></div>` : ''}
+      ${s.next.length ? `<div class="card">
+        <h3>This unlocks</h3>
+        <div class="sks" style="margin-top:8px">
+          ${s.next.slice(0, 6).map(b => this.skillCard(SKILL[b])).join('')}</div></div>` : ''}
+      ${GEN[id] && !blockers.length
+        ? `<button class="btn wide big" onclick="App.practise('${id}')">Practise this</button>`
+        : (blockers.length ? '' : `<p class="dim small">Coming soon.</p>`)}
+    `);
+  },
+
+  practise(id) {
+    this._practice = id;
+    this.tab = 'today';
+    this.serve(id, (Date.now() % 100000) >>> 0);
+    this.renderNav();
+  },
+
+  setGrade(g) { Progress.setGrade(g); this.go('map'); },
+
+  // ── REPORT (the child's own) ──
+  report() {
+    const p = Progress.p;
+    const days = (p.dayLog || []).slice(-21);
+    const max = Math.max(1, ...days.map(d => d.asked));
+    const all = Progress.counts();
+    let right = 0, wrong = 0;
+    Object.values(p.skills || {}).forEach(r => { right += r.right || 0; wrong += r.wrong || 0; });
+
+    this.el(`
+      ${this.bar('Progress', p.dayStreak > 1 ? `<span class="chip flame">🔥 ${p.dayStreak}</span>` : '')}
+      <div class="grid2">
+        <div class="stat"><b>${all.mastered}</b><span>Skills mastered</span></div>
+        <div class="stat"><b>${right + wrong ? Math.round(right / (right + wrong) * 100) : 0}%</b>
+          <span>Right overall</span></div>
+        <div class="stat"><b>${right}</b><span>Questions right</span></div>
+        <div class="stat"><b>${p.bestStreak || 0}</b><span>Best day streak</span></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>The last three weeks</h2>
+        <div class="spark">
+          ${days.map(d => `<i class="${d.asked ? 'hot' : ''}"
+            style="height:${Math.max(4, d.asked / max * 100)}%" title="${d.d}: ${d.right}/${d.asked}"></i>`).join('')}
+        </div>
+      </div>
+      ${this.errorCard()}
+      <div class="card">
+        <h2>Where you are</h2>
+        <div class="scroll-x"><table class="rep">
+          <tr><th>Grade</th><th class="num">Mastered</th><th class="num">Started</th><th class="num">To come</th></tr>
+          ${[1, 2, 3, 4, 5, 6].map(g => {
+            const c = Progress.counts(g);
+            const t = SKILLS.filter(s => s.g === g).length;
+            return `<tr><td>${GRADES[g].name}</td>
+              <td class="num">${c.mastered + c.stale}</td>
+              <td class="num">${c.known + c.seen}</td>
+              <td class="num">${t - c.mastered - c.stale - c.known - c.seen}</td></tr>`;
+          }).join('')}
+        </table></div>
+      </div>`);
+  },
+
+  // ── PARENT DASHBOARD ──
+  parent() {
+    const p = Progress.p;
+    this.el(`
+      ${this.bar('Grown-ups')}
+      <div class="card">
+        <h2>${this.esc(Progress.profile.name)}</h2>
+        <p class="dim small" style="margin-top:4px">
+          ${GRADES[p.grade].name} · on this device</p>
+        ${this.parentBody(Family.summarise(Progress.profile), 'math-lab')}
+      </div>
+      <div class="card">
+        <h2>Every app</h2>
+        <p class="dim small" style="margin-top:4px">
+          Sign in to see Wonder Lab and Unicorn Reading Academy here too.</p>
+        <div id="fam" style="margin-top:12px">
+          ${window.Sync && Sync.uid
+            ? '<p class="dim small">Loading…</p>'
+            : `<button class="btn ghost wide" onclick="App.signInPrompt()">Sign in</button>`}
+        </div>
+      </div>
+      <div class="card">
+        <h2>Settings</h2>
+        <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
+          <input type="checkbox" ${p.readAloud ? 'checked' : ''}
+            onchange="Progress.p.readAloud=this.checked;Progress.commit()"
+            style="width:20px;height:20px;accent-color:var(--amber)">
+          <span>Read each problem out loud automatically</span>
+        </label>
+        <p class="dim small" style="margin-top:6px">
+          Off by default. Every problem has a Listen button either way — this is
+          for a child who reads less easily than they do maths.</p>
+      </div>`);
+    if (window.Sync && Sync.uid) this.loadFamily();
+  },
+
+  parentBody(sum, app) {
+    const errs = (sum.errors || []).slice(0, 4);
+    const byG = sum.byGrade || {};
+    return `
+      <div class="grid2" style="margin-top:12px">
+        <div class="stat"><b>${Object.values(byG).reduce((s, g) => s + g.mastered, 0)}</b>
+          <span>Skills mastered</span></div>
+        <div class="stat"><b>${sum.asked ? Math.round(sum.right / sum.asked * 100) : 0}%</b>
+          <span>Right overall</span></div>
+      </div>
+      ${errs.length ? `<h3 style="margin-top:16px">Mistakes to work on</h3>
+        <div style="margin-top:6px">${errs.map(e => `<div class="errrow">
+          <span class="n">${e.n}×</span>
+          <span class="t">${this.esc((ERRORS[e.tag] || ERRORS.unknown).name)}<br>
+            <span class="dim small">${this.esc((ERRORS[e.tag] || ERRORS.unknown).fix)}</span></span>
+        </div>`).join('')}</div>` : ''}
+      ${(sum.stale || []).length ? `<h3 style="margin-top:16px">Gone quiet — worth revisiting</h3>
+        <p class="dim small" style="margin-top:4px">
+          ${sum.stale.map(id => this.esc((SKILL[id] || {}).name || id)).join(' · ')}</p>` : ''}`;
+  },
+
+  async loadFamily() {
+    try {
+      const rows = await Family.readAll(Sync);
+      const el = document.getElementById('fam');
+      if (!el) return;
+      if (!rows.length) { el.innerHTML = '<p class="dim small">Nothing published yet.</p>'; return; }
+      const byChild = {};
+      rows.forEach(r => (byChild[r.name] = byChild[r.name] || []).push(r));
+      el.innerHTML = Object.entries(byChild).map(([name, apps]) => `
+        <h3 style="margin-top:12px">${this.esc(name)}</h3>
+        ${apps.map(a => `<div style="margin-top:6px">
+          <p class="small"><b>${this.esc(a.app)}</b>
+            <span class="dim">· ${a.updatedAt ? a.updatedAt.toLocaleDateString() : 'no date'}</span></p>
+          ${a.app === 'math-lab' ? this.parentBody(a.summary, a.app) : ''}
+        </div>`).join('')}`).join('');
+    } catch (e) {
+      const el = document.getElementById('fam');
+      if (el) el.innerHTML = `<p class="dim small">Could not load: ${this.esc(e.message)}</p>`;
+    }
+  },
+
+  signInPrompt() {
+    alert('Sign-in lands with the next build — the family summary path needs the '
+        + 'Firestore rule in SYNC.md deployed first.');
+  },
+};
+
+window.App = App;
+document.addEventListener('DOMContentLoaded', () => App.init());
