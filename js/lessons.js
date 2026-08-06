@@ -159,6 +159,7 @@ const LESSONS = {
   watch: "A zero is not nothing. In 508 it means there are no tens, and it holds the hundreds and ones apart. Drop it and you have 58.",
 },
 'npv.compare3': {
+  fig: { kind: 'grid', x: 4, y: 2 },
   anchor: "Two crowds. You count the hundreds first, and only if those tie do you bother with the tens.",
   idea: "Start at the biggest place and move right until the digits differ. The first difference decides it, and nothing further right can change it.",
   steps: [
@@ -339,6 +340,7 @@ const LESSONS = {
   watch: "The power counts the ZEROS, not the digits. 10 to the power 3 is 1,000 — four digits, three zeros.",
 },
 'npv.integers': {
+  fig: { kind: 'numline', d: 1, n: 1 },
   anchor: "A thermometer does not stop at zero. Below it the numbers keep going, counting how far below you are.",
   idea: "The number line runs both ways. Further RIGHT is always greater — which means with negatives, the bigger-looking digit is the smaller number.",
   steps: [
@@ -1143,6 +1145,7 @@ const LESSONS = {
 /* ══ FRACTIONS ══════════════════════════════════════════════════════════ */
 
 'fr.halves': {
+  fig: { kind: 'pie', d: 4, n: 0 },
   anchor: "Fold a piece of paper down the middle and the two sides match exactly. Fold it unevenly and they do not — and then it is not halves at all.",
   idea: "A fraction is a whole cut into EQUAL parts. Equal means equal in size, and if the parts are not equal it is not a fraction.",
   steps: [
@@ -1204,6 +1207,7 @@ const LESSONS = {
   watch: "The bottom counts ALL the parts, not just the empty ones. And a bigger bottom number means smaller pieces: one eighth is less than one third.",
 },
 'fr.numline': {
+  fig: { kind: 'numline', d: 4, n: 3 },
   anchor: "A ruler is a number line with fractions on it. The little marks between the inches are fourths and eighths of an inch.",
   idea: "A fraction is a number, so it has a place on the line. Count the GAPS between whole numbers, not the tick marks.",
   steps: [
@@ -1476,6 +1480,7 @@ const LESSONS = {
 /* ══ DECIMALS, PERCENT & RATIO ══════════════════════════════════════════ */
 
 'dp.tenths': {
+  fig: { kind: 'hundred', v: 70 },
   anchor: "A hundred square shaded in. Seven whole columns is seven tenths; seven little squares is seven hundredths. Same digits, very different amounts.",
   idea: "A decimal is another way of writing a fraction whose bottom is ten or a hundred. The point separates whole things from parts of one.",
   steps: [
@@ -1705,6 +1710,7 @@ const LESSONS = {
 /* ══ MEASUREMENT, TIME & MONEY ══════════════════════════════════════════ */
 
 'mt.time.hour': {
+  fig: { kind: 'clock', min: 210 },
   anchor: "Two hands going round at different speeds. The short one takes twelve hours to go round once; the long one does it in an hour.",
   idea: "The SHORT hand gives the hour, the LONG hand the minutes. At half past, the short hand sits between two numbers — and the hour is the one it has already passed.",
   steps: [
@@ -1726,6 +1732,7 @@ const LESSONS = {
   watch: "At half past, the short hand is BETWEEN two numbers. Reading the one ahead makes every half-past an hour late.",
 },
 'mt.time.5': {
+  fig: { kind: 'clock', min: 500 },
   anchor: "The numbers on the face do two jobs. For the short hand a 3 means three o'clock; for the long hand it means fifteen minutes.",
   idea: "The long hand counts in FIVES round the face. Pointing at the 4 means twenty minutes, not four.",
   steps: [
@@ -1745,6 +1752,7 @@ const LESSONS = {
   watch: "Same number, two jobs. The long hand on the 4 is twenty minutes; the short hand on the 4 is four o'clock.",
 },
 'mt.time.min': {
+  fig: { kind: 'clock', min: 157 },
   anchor: "Between the big numbers are little marks, one for each minute. Sixty of them go all the way round.",
   idea: "Count in fives to the nearest number, then single minutes from there. The closer the long hand gets to the top, the closer the hour is to changing.",
   steps: [
@@ -1766,6 +1774,7 @@ const LESSONS = {
   watch: "The hour does not change until the long hand reaches the 12. At 4:59 the short hand is almost touching the 5, and it is still four o'clock.",
 },
 'mt.elapsed': {
+  fig: { kind: 'clocks', a: 160, b: 250 },
   anchor: "Working out how long a car journey took. You count the whole hours first, then the odd minutes — you never count sixty minutes at a time.",
   idea: "Elapsed time is the gap between two times. Time counts in sixties, not hundreds, which is what makes it awkward.",
   steps: [
@@ -1787,6 +1796,7 @@ const LESSONS = {
   watch: "Minutes roll over at 60, not 100. From 3:50, twenty minutes later is 4:10 — not 3:70.",
 },
 'mt.coins': {
+  fig: { kind: 'coins', v: [10] },
   anchor: "Coins are worth what they are worth, and the size of the coin is no guide at all. A dime is smaller than a nickel and worth twice as much.",
   idea: "Each coin has a fixed value that has to be known by sight. There is no rule to work it out from.",
   steps: [
@@ -1805,6 +1815,7 @@ const LESSONS = {
   watch: "Size is no guide. The dime is smaller than the nickel and worth twice as much.",
 },
 'mt.money.cnt': {
+  fig: { kind: 'coins', v: [25, 10, 1, 1] },
   anchor: "Emptying a pocket of change onto the table. You sort the big coins first and count on from there — nobody counts a handful of change in ones.",
   idea: "Counting money is adding different values, so sort biggest first and count on.",
   steps: [
@@ -1825,6 +1836,7 @@ const LESSONS = {
   watch: "Count the VALUE, not the coins. Four coins can be worth 4 cents or 100 depending which four.",
 },
 'mt.money.chg': {
+  fig: { kind: 'coins', v: [25, 10] },
   anchor: "The shopkeeper counts up from the price to what you handed over, putting coins in your hand as they go. That is subtraction done forwards.",
   idea: "Change is the gap between the price and what you paid. Counting UP is easier than taking away, and it is how it is done in a shop.",
   steps: [
@@ -1867,6 +1879,7 @@ const LESSONS = {
   watch: "Cents carry at 100, not 10. 75 + 60 cents is $1.35, not $1.35 written as 135 cents in the cents column.",
 },
 'mt.len.cmp': {
+  fig: { kind: 'ruler', n: 7 },
   anchor: "Two pencils held side by side with their ends level. If they do not start level, the comparison means nothing.",
   idea: "To compare lengths fairly, everything must start from the same line. Then whichever reaches furthest is longest.",
   steps: [
@@ -1886,6 +1899,7 @@ const LESSONS = {
   watch: "If they do not start level the comparison is meaningless. Line them up first, every time.",
 },
 'mt.len.inch': {
+  fig: { kind: 'ruler', n: 7 },
   anchor: "A ruler measures from the ZERO, not from the end of the plastic. There is usually a little gap before the 0 mark.",
   idea: "Line the left end of the object up with 0 and read the number at the other end.",
   steps: [
@@ -1905,6 +1919,7 @@ const LESSONS = {
   watch: "Starting at the 1 instead of the 0 makes everything an inch too short. Check the left end before reading the right.",
 },
 'mt.capacity': {
+  fig: { kind: 'coins', v: [25, 25] },
   anchor: "A gallon jug fills four quart bottles. Each quart fills two pints, and each pint fills two cups. It is bundling again, with liquid.",
   idea: "Each unit holds twice or four times the one below. Going to a SMALLER unit always gives you MORE of them.",
   steps: [
@@ -1944,6 +1959,7 @@ const LESSONS = {
   watch: "A bigger unit always gives a smaller number. If the number went the wrong way, you multiplied when you should have divided.",
 },
 'mt.perimeter': {
+  fig: { kind: 'rect', w: 5, h: 3, mode: 'perimeter' },
   anchor: "Putting a fence round a garden. You need the total length of all four sides — that is the perimeter.",
   idea: "Perimeter is the distance all the way round the outside. Add every side, including the ones not labelled.",
   steps: [
@@ -1963,6 +1979,7 @@ const LESSONS = {
   watch: "A rectangle has FOUR sides. Adding only the two labelled ones gives half the answer.",
 },
 'mt.area.cnt': {
+  fig: { kind: 'tiles', w: 4, h: 3 },
   anchor: "Tiling a floor. Area is how many tiles it takes to cover it, and you count them in rows rather than one at a time.",
   idea: "Area is how much surface is covered, counted in squares. Count one row, then multiply by the number of rows.",
   steps: [
@@ -1983,6 +2000,7 @@ const LESSONS = {
   watch: "Perimeter is a walk round the edge; area is covering the inside. They answer different questions and give different numbers.",
 },
 'mt.area.form': {
+  fig: { kind: 'rect', w: 6, h: 4, mode: 'missing' },
   anchor: "Once you can see that area is rows of squares, you can stop counting and multiply. The formula is the shortcut for the tiling.",
   idea: "Area is length times width. To find a missing side, divide the area by the side you know.",
   steps: [
@@ -2004,6 +2022,7 @@ const LESSONS = {
   watch: "Area is in SQUARE units because you are counting squares. Perimeter is in plain units because you are walking a line.",
 },
 'mt.volume': {
+  fig: { kind: 'box', a: 4, b: 3, c: 2 },
   anchor: "Filling a box with sugar cubes. One layer covers the bottom; then you stack layers until it is full.",
   idea: "Volume is how much space something fills, counted in unit cubes. One layer, times the number of layers.",
   steps: [
@@ -2024,6 +2043,7 @@ const LESSONS = {
   watch: "Volume needs THREE measurements multiplied. Multiplying only two gives you the area of one face.",
 },
 'mt.surface': {
+  fig: { kind: 'box', a: 3, b: 2, c: 4 },
   anchor: "Wrapping a present. You need enough paper to cover every face — and a box has six of them, in three matching pairs.",
   idea: "Surface area is the total of all the outside faces. Six faces in three matching pairs: find one of each pair, add, then double.",
   steps: [
@@ -2045,6 +2065,7 @@ const LESSONS = {
   watch: "Surface area covers the OUTSIDE and is in square units. Volume fills the inside and is in cubic units.",
 },
 'mt.area.tri': {
+  fig: { kind: 'tri', name: 'Right' },
   anchor: "Draw a rectangle and cut it corner to corner. Each half is a triangle with the same base and height — and exactly half the area.",
   idea: "A triangle is half the rectangle it fits inside. A parallelogram is the whole of it. The height is the straight-up distance, not the slanted side.",
   steps: [
@@ -2068,6 +2089,7 @@ const LESSONS = {
 /* ══ GEOMETRY ═══════════════════════════════════════════════════════════ */
 
 'geo.shapes2d': {
+  fig: { kind: 'shape2d', name: 'Hexagon' },
   anchor: "Trace round a shape with your finger and count the corners as you turn. The number of turns is the number of sides.",
   idea: "Flat shapes are named by how many straight sides they have. Counting sides and corners tells you which one it is.",
   steps: [
@@ -2088,6 +2110,7 @@ const LESSONS = {
   watch: "A square IS a rectangle — a rectangle with all four sides equal. The names overlap on purpose.",
 },
 'geo.shapes3d': {
+  fig: { kind: 'shape3d', name: 'Cube' },
   anchor: "A cereal box, a ball, an ice-cream cone. Solid shapes take up space, and you name them by their faces.",
   idea: "Solids are named by their faces and whether any surface is curved.",
   steps: [
@@ -2108,6 +2131,7 @@ const LESSONS = {
   watch: "A cube is a special rectangular prism — the one where every face is a square. Both names are true of it.",
 },
 'geo.sides': {
+  fig: { kind: 'ngon', n: 5 },
   anchor: "Put your finger on one corner and go round the shape once. Every time you turn, that is a corner, and every straight run between turns is a side.",
   idea: "A shape always has the same number of corners as sides. Start at a corner and mark it so you know when you have gone round once.",
   steps: [
@@ -2128,6 +2152,7 @@ const LESSONS = {
   watch: "Losing your place going round is the only way to get this wrong. Mark your starting corner.",
 },
 'geo.partition': {
+  fig: { kind: 'bar', d: 3, n: 0 },
   anchor: "Cutting a sandwich for two people. Down the middle gives halves; corner to corner also gives halves — different shapes, same size.",
   idea: "Cutting a shape into equal parts is where fractions come from. Equal means equal in SIZE, not necessarily the same shape.",
   steps: [
@@ -2147,6 +2172,7 @@ const LESSONS = {
   watch: "Equal parts must be the same SIZE. They can be different shapes and still be equal halves.",
 },
 'geo.quads': {
+  fig: { kind: 'quad', name: 'Rectangle' },
   anchor: "A square, a rectangle and a diamond all have four sides. What separates them is which sides are equal and whether the corners are square.",
   idea: "Every four-sided shape is a quadrilateral. Which one it is depends on the sides and the angles, and the names overlap.",
   steps: [
@@ -2167,6 +2193,7 @@ const LESSONS = {
   watch: "The names overlap deliberately. A square is a rectangle AND a rhombus AND a parallelogram, all at once.",
 },
 'geo.symmetry': {
+  fig: { kind: 'quad', name: 'Rectangle' },
   anchor: "Fold a shape along a line. If the two halves land exactly on each other with nothing sticking out, that line is a line of symmetry.",
   idea: "A line of symmetry folds the shape exactly onto itself. Every corner has to land on another corner.",
   steps: [
@@ -2188,6 +2215,7 @@ const LESSONS = {
   watch: "A rectangle has two, not four. The diagonal fold only works when all four sides are equal.",
 },
 'geo.angles': {
+  fig: { kind: 'angle', deg: 45 },
   anchor: "The corner of a piece of paper is a right angle. Hold it against any corner and you can see at once whether that corner is smaller or bigger.",
   idea: "An angle measures a TURN. A right angle is a square corner — a quarter turn. The length of the arms makes no difference at all.",
   steps: [
@@ -2208,6 +2236,7 @@ const LESSONS = {
   watch: "Long arms do not make a big angle. Two short lines can make a wide angle and two long ones a narrow angle.",
 },
 'geo.lines': {
+  fig: { kind: 'lines', name: 'Perpendicular' },
   anchor: "Railway tracks never meet — parallel. A road crossing them squarely is perpendicular. A road crossing at a slant just intersects.",
   idea: "Parallel lines never meet. Perpendicular lines cross at a square corner. Perpendicular lines ARE intersecting lines — a special kind.",
   steps: [
@@ -2228,6 +2257,7 @@ const LESSONS = {
   watch: "Perpendicular lines are also intersecting lines. The names are not mutually exclusive.",
 },
 'geo.triangles': {
+  fig: { kind: 'tri', name: 'Right' },
   anchor: "Triangles get sorted two ways at once: by their sides, and by their angles. A triangle can have a name from each list.",
   idea: "By sides: all three equal is equilateral, exactly two is isosceles, none is scalene. By angles: one right angle makes it a right triangle.",
   steps: [
@@ -2248,6 +2278,7 @@ const LESSONS = {
   watch: "A triangle can carry two names at once, like right AND isosceles. The two lists ask different questions.",
 },
 'geo.anglerule': {
+  fig: { kind: 'angle', deg: 130 },
   anchor: "Two angles sitting together on a straight line always make a half turn between them. Knowing one gives you the other for free.",
   idea: "Angles that sit together add to a fixed total: 180 on a straight line, 90 in a square corner. Subtract to find the missing one.",
   steps: [
@@ -2268,6 +2299,7 @@ const LESSONS = {
   watch: "Check which total applies before subtracting. A straight line is 180; a square corner is only 90.",
 },
 'geo.coord': {
+  fig: { kind: 'grid', x: 3, y: 5 },
   anchor: "Finding a seat in a theatre: row and number. A coordinate is an address, and the order is agreed so everyone finds the same seat.",
   idea: "A coordinate is how far ACROSS, then how far UP. The order is fixed — across always comes first.",
   steps: [
@@ -2288,6 +2320,7 @@ const LESSONS = {
   watch: "(3, 5) and (5, 3) are different points. Along the corridor, then up the stairs.",
 },
 'geo.coord4': {
+  fig: { kind: 'grid', x: -2, y: -4, lo: -10, hi: 10 },
   anchor: "Extend the grid left and down past zero and you get four quadrants. Negative coordinates are just addresses on the other side.",
   idea: "Left of the middle line is a negative x. Below it is a negative y. The signs matter as much as the numbers.",
   steps: [
@@ -2311,6 +2344,7 @@ const LESSONS = {
 /* ══ DATA & GRAPHS ══════════════════════════════════════════════════════ */
 
 'da.picture': {
+  fig: { kind: 'picto', counts: [6, 3, 4], scale: 1 },
   anchor: "A row of apple pictures, one for each apple. Counting the pictures counts the apples.",
   idea: "A picture graph shows amounts with one picture per thing. Find the right ROW first, then count.",
   steps: [
@@ -2330,6 +2364,7 @@ const LESSONS = {
   watch: "Read the LABEL first. Counting the wrong row gives a real number that answers a different question.",
 },
 'da.tally': {
+  fig: { kind: 'tally', n: 17 },
   anchor: "Counting cars going past, you make a mark for each one and stroke through every fifth. Bundles of five are far easier to count than a row of single marks.",
   idea: "Tally marks are counted in fives. The stroke across is the FIFTH mark, not an extra one.",
   steps: [
@@ -2350,6 +2385,7 @@ const LESSONS = {
   watch: "The diagonal stroke IS the fifth mark, not a sixth. A bundle is always exactly five.",
 },
 'da.bar': {
+  fig: { kind: 'chart', counts: [4, 8, 20, 14], step: 5 },
   anchor: "A bar graph turns numbers into heights so you can see at a glance which is biggest, without reading a single number.",
   idea: "Read a bar by following its top across to the scale. 'How many more' means read BOTH bars and subtract.",
   steps: [
@@ -2370,6 +2406,7 @@ const LESSONS = {
   watch: "'How many more' means subtract. Reading one bar answers a different question and is the commonest slip here.",
 },
 'da.scaled': {
+  fig: { kind: 'picto', counts: [20, 15, 10, 25], scale: 5 },
   anchor: "When the numbers get big, drawing one picture per thing is silly. So one picture stands for five or ten, and the key tells you which.",
   idea: "One picture stands for several. Count the pictures, then MULTIPLY by what the key says.",
   steps: [
@@ -2390,6 +2427,7 @@ const LESSONS = {
   watch: "Forgetting the key gives an answer far too small — you report the number of pictures instead of the number of things.",
 },
 'da.lineplot': {
+  fig: { kind: 'numline', d: 2, n: 3 },
   anchor: "Everyone in the class writes their height on a line, stacking a cross above their number. The tallest stack shows the commonest value.",
   idea: "A line plot stacks one mark per item above its value, so you can see where the data clusters.",
   steps: [
@@ -2409,6 +2447,7 @@ const LESSONS = {
   watch: "Count the MARKS, not the height of the stack measured against anything. Each mark is one item.",
 },
 'da.linegraph': {
+  fig: { kind: 'chart', counts: [6, 12, 9, 17], step: 5 },
   anchor: "A temperature chart through the day. The line between the points shows the trend — going up, going down, staying flat.",
   idea: "A line graph shows change over time. Go UP from the bottom axis to the line, then ACROSS to the scale.",
   steps: [
@@ -2470,6 +2509,7 @@ const LESSONS = {
   watch: "You MUST sort first for the median. The middle of the unsorted list is just whichever number happened to be written third.",
 },
 'da.prob': {
+  fig: { kind: 'coins', v: [1, 1, 1, 25, 25, 25, 25, 25] },
   anchor: "A bag with three red counters and five blue. Reaching in without looking, red is less likely — and 'how much less' is a fraction.",
   idea: "Probability counts the ways you can get what you want, out of ALL the ways anything can happen.",
   steps: [
@@ -2636,6 +2676,7 @@ const LESSONS = {
   watch: "Whatever you do to one side you must do to the other, or the balance breaks and the answer is wrong.",
 },
 'alg.inequal': {
+  fig: { kind: 'numline', d: 3, n: 2 },
   anchor: "A sign saying 'you must be over 12 to ride'. That is not one age — it is every age above twelve, and twelve itself does not count.",
   idea: "An inequality shows a RANGE of answers, not one. The circle says whether the end point is included.",
   steps: [

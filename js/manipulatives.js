@@ -48,7 +48,7 @@ const S = {
   },
   text(x, y, s, size, fill, anchor) {
     return `<text x="${x}" y="${y}" font-size="${size || 14}"
-      fill="${fill || 'var(--text)'}" text-anchor="${anchor || 'middle'}"
+      fill="${fill || 'var(--ink)'}" text-anchor="${anchor || 'middle'}"
       font-family="system-ui,-apple-system,sans-serif" font-weight="600"
       dominant-baseline="middle">${String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>`;
   },
@@ -62,8 +62,10 @@ const S = {
     const big = (a1 - a0) > Math.PI ? 1 : 0;
     return S.path(`M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${big} 1 ${x1} ${y1} Z`, fill, stroke);
   },
-  INK: 'var(--line-2)', ON: 'var(--amber)', DIM: 'var(--dim)',
-  TXT: 'var(--text)', FILL: 'var(--ink-3)',
+  // Every figure draws with the app's own tokens, so a diagram themes with the
+  // page and can never hardcode a ground the page does not have.
+  INK: 'var(--rule-2)', ON: 'var(--flame)', DIM: 'var(--dim)',
+  TXT: 'var(--ink)', FILL: 'var(--sheet-2)',
 };
 
 (function () {
@@ -650,7 +652,7 @@ const S = {
       s += S.text(X(n), y + 22, n, 11, S.DIM);
     }
     s += S.line(X(v), y, right ? W - 20 : 20, y, S.ON, 5);
-    s += S.circle(X(v), y, 7, closed ? S.ON : 'var(--ink)', S.ON, 3);
+    s += S.circle(X(v), y, 7, closed ? S.ON : 'var(--sheet)', S.ON, 3);
     const flip = right ? '<' : '>';
     const openClosed = closed ? (right ? '>' : '<') : (right ? '≥' : '≤');
     return { q: 'Which inequality does this show?', fmt: 'choice',
@@ -987,6 +989,129 @@ const Fig = {
 
   // A bar split into d parts with n shaded — the fraction anchor.
   bar(d, n) { return bar(d, n); },
+  pie(d, n) { return pie(d, n); },
+
+  // ── the rest of the figures ──
+  // Every one of these already existed to draw a PROBLEM. A lesson that
+  // describes a clock in words, immediately before a question that shows one,
+  // is teaching from behind a curtain.
+  clock(min) { return clockFace(min); },
+  coins(values) {
+    return coinRow(values.map(v => COINS.find(c => c.v === v)).filter(Boolean));
+  },
+  ruler(n) {
+    const w = 340, x0 = 20, step = (w - 40) / 12;
+    let g = S.rect(x0, 44, round(12 * step), 24, S.FILL, S.INK);
+    for (let i = 0; i <= 12; i++) {
+      g += S.line(round(x0 + i * step), 44, round(x0 + i * step), 56, S.INK, 1.5);
+      g += S.text(round(x0 + i * step), 64, i, 10, S.DIM);
+    }
+    g += S.rect(x0, 18, round(n * step), 20, S.ON, S.INK);
+    return S.wrap(w, 78, g);
+  },
+  shape2d(name) { return S.wrap(150, 130, (SHAPES2D[name] || SHAPES2D.Square)()); },
+  shape3d(name) { return S.wrap(150, 130, (SHAPES3D[name] || SHAPES3D.Cube)()); },
+  quad(name)    { return S.wrap(158, 132, (QUADS[name] || QUADS.Square)()); },
+  tri(name)     { return S.wrap(180, 132, (TRIS[name] || TRIS.Right)()); },
+  ngonFig(n)    { return S.wrap(150, 136, S.poly(ngon(n, 74, 68, 54), S.FILL, S.INK)); },
+  chart(counts, step) { return barChart(counts, step || 5); },
+  picto(counts, scale) { return pictograph(counts, scale || 1); },
+  grid(px, py, lo, hi) { return gridPlot(lo == null ? 0 : lo, hi == null ? 10 : hi, px, py); },
+  box(a, b, c) { return boxFig(a, b, c); },
+
+  // a rectangle with its sides labelled — perimeter, area, missing side
+  rect(w, h, mode) {
+    let g = S.rect(34, 24, 150, 74, S.FILL, S.INK);
+    g += S.text(109, 14, w + ' in', 13, S.DIM);
+    g += S.text(18, 61, (mode === 'missing' ? '?' : h + ' in'), 13,
+                mode === 'missing' ? S.ON : S.DIM);
+    if (mode === 'perimeter') {
+      g += S.text(109, 110, w + ' in', 13, S.DIM);
+      g += S.text(200, 61, h + ' in', 13, S.DIM);
+    }
+    if (mode === 'area' || mode === 'missing') {
+      g += S.text(109, 61, 'area ' + (w * h), 14, S.TXT);
+    }
+    return S.wrap(220, mode === 'perimeter' ? 124 : 112, g);
+  },
+
+  // a rectangle tiled into unit squares — area by counting
+  tiles(w, h) {
+    const c = w > 7 ? 20 : 26;
+    let g = S.rect(8, 8, w * c, h * c, S.ON, null);
+    for (let i = 1; i < w; i++) g += S.line(8 + i * c, 8, 8 + i * c, 8 + h * c, S.INK, 1);
+    for (let j = 1; j < h; j++) g += S.line(8, 8 + j * c, 8 + w * c, 8 + j * c, S.INK, 1);
+    g += S.rect(8, 8, w * c, h * c, 'none', S.INK);
+    return S.wrap(w * c + 16, h * c + 16, g);
+  },
+
+  // an angle, with the arc drawn
+  angle(deg) {
+    const cx = 34, cy = 108, L = 140, a = -deg * Math.PI / 180, R = 34;
+    let g = S.line(cx, cy, cx + L, cy, S.INK, 3);
+    g += S.line(cx, cy, round(cx + L * Math.cos(a)), round(cy + L * Math.sin(a)), S.INK, 3);
+    g += S.path('M ' + (cx + R) + ' ' + cy + ' A ' + R + ' ' + R + ' 0 0 ' +
+                (deg > 180 ? 1 : 0) + ' ' + round(cx + R * Math.cos(a)) + ' ' +
+                round(cy + R * Math.sin(a)), 'none', S.ON, 2);
+    if (deg === 90) g += S.rect(cx, cy - 15, 15, 15, 'none', S.DIM);
+    return S.wrap(190, 126, g);
+  },
+
+  lines(kind) {
+    let g;
+    if (kind === 'Parallel') g = S.line(20, 40, 190, 40, S.INK, 3) + S.line(20, 92, 190, 92, S.INK, 3);
+    else if (kind === 'Perpendicular') g = S.line(20, 66, 190, 66, S.INK, 3) +
+      S.line(105, 12, 105, 120, S.INK, 3) + S.rect(105, 51, 15, 15, 'none', S.DIM);
+    else g = S.line(20, 22, 190, 108, S.INK, 3) + S.line(20, 100, 190, 32, S.INK, 3);
+    return S.wrap(210, 132, g);
+  },
+
+  tally(n) {
+    let g = '', x = 12;
+    for (let k = 0; k < n; k++) {
+      if (k % 5 === 4) { g += S.line(x - 31, 14, x + 3, 44, S.TXT, 3); x += 20; }
+      else { g += S.line(x, 12, x, 46, S.TXT, 3); x += 9; }
+    }
+    return S.wrap(Math.max(80, x + 10), 58, g);
+  },
+
+  // fraction on a number line: d steps to the whole, arrow at n
+  numline(d, n) {
+    const w = 320, y = 42;
+    let g = S.line(20, y, w - 20, y, S.INK, 3);
+    for (let i = 0; i <= d * 2; i++) {
+      const x = round(20 + (w - 40) * i / (d * 2));
+      const tall = i % d === 0;
+      g += S.line(x, y - (tall ? 12 : 7), x, y + (tall ? 12 : 7), S.INK, 2);
+      if (tall) g += S.text(x, y + 26, i / d, 13, S.DIM);
+    }
+    const px = round(20 + (w - 40) * n / (d * 2));
+    g += S.path('M ' + px + ' ' + (y - 27) + ' L ' + (px - 7) + ' ' + (y - 15) +
+                ' L ' + (px + 7) + ' ' + (y - 15) + ' Z', S.ON, null);
+    return S.wrap(w, 76, g);
+  },
+
+  // a hundred square with v hundredths shaded
+  hundred(v) {
+    const cell = 22, cols = 10;
+    let g = S.rect(8, 8, cols * cell, cols * cell, S.FILL, null);
+    for (let k = 0; k < v; k++) {
+      g += S.rect(8 + (k % cols) * cell, 8 + Math.floor(k / cols) * cell, cell, cell, S.ON, null);
+    }
+    for (let i = 1; i < cols; i++) {
+      g += S.line(8 + i * cell, 8, 8 + i * cell, 8 + cols * cell, S.INK, i === 5 ? 1.6 : .7);
+      g += S.line(8, 8 + i * cell, 8 + cols * cell, 8 + i * cell, S.INK, i === 5 ? 1.6 : .7);
+    }
+    g += S.rect(8, 8, cols * cell, cols * cell, 'none', S.INK);
+    return S.wrap(cols * cell + 16, cols * cell + 16, g);
+  },
+
+  // two clocks side by side — elapsed time
+  clocks(a, b) {
+    return '<span style="display:inline-flex;gap:14px;flex-wrap:wrap;justify-content:center">'
+      + clockFace(a) + clockFace(b) + '</span>';
+  },
+
 };
 
   (function (root) { root.Fig = Fig; })(

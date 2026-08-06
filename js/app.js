@@ -166,17 +166,15 @@ const App = {
   welcome() {
     document.getElementById('nav').innerHTML = '';
     this.el(`
-      <div style="padding:56px 6px 18px;text-align:center">
-        <div style="font-size:3.6rem;line-height:1">🧮</div>
-        <h1 style="margin-top:10px;font-size:2rem">Math Lab</h1>
-        <p class="dim" style="margin-top:8px">First grade to sixth, one step at a time.</p>
+      <div class="hero">
+        <div class="mark">🧮</div>
+        <h1>Math Lab</h1>
+        <p>First grade to sixth, one step at a time.</p>
       </div>
       <div class="card">
         <h2>What should we call you?</h2>
         <input id="nm" maxlength="18" placeholder="Your name"
-          style="width:100%;margin-top:12px;padding:14px;border-radius:12px;
-                 background:var(--ink-3);border:1px solid var(--line);
-                 color:var(--text);font:inherit;font-size:1.05rem">
+          class="namefield">
         <h2 style="margin-top:18px">Which grade?</h2>
         <p class="dim small" style="margin-top:4px">You can change this whenever you like.</p>
         <div class="opts two" style="grid-template-columns:repeat(3,1fr)">
@@ -689,6 +687,27 @@ const App = {
       if (f.kind === 'tenframe') return Fig.tenFrame(f.filled, f.extra);
       if (f.kind === 'array') return Fig.array(f.rows, f.cols, f.grouped);
       if (f.kind === 'bar') return Fig.bar(f.d, f.n);
+      if (f.kind === 'pie') return Fig.pie(f.d, f.n);
+      if (f.kind === 'clock') return Fig.clock(f.min);
+      if (f.kind === 'clocks') return Fig.clocks(f.a, f.b);
+      if (f.kind === 'coins') return Fig.coins(f.v);
+      if (f.kind === 'ruler') return Fig.ruler(f.n);
+      if (f.kind === 'shape2d') return Fig.shape2d(f.name);
+      if (f.kind === 'shape3d') return Fig.shape3d(f.name);
+      if (f.kind === 'quad') return Fig.quad(f.name);
+      if (f.kind === 'tri') return Fig.tri(f.name);
+      if (f.kind === 'ngon') return Fig.ngonFig(f.n);
+      if (f.kind === 'chart') return Fig.chart(f.counts, f.step);
+      if (f.kind === 'picto') return Fig.picto(f.counts, f.scale);
+      if (f.kind === 'grid') return Fig.grid(f.x, f.y, f.lo, f.hi);
+      if (f.kind === 'box') return Fig.box(f.a, f.b, f.c);
+      if (f.kind === 'rect') return Fig.rect(f.w, f.h, f.mode);
+      if (f.kind === 'tiles') return Fig.tiles(f.w, f.h);
+      if (f.kind === 'angle') return Fig.angle(f.deg);
+      if (f.kind === 'lines') return Fig.lines(f.name);
+      if (f.kind === 'tally') return Fig.tally(f.n);
+      if (f.kind === 'numline') return Fig.numline(f.d, f.n);
+      if (f.kind === 'hundred') return Fig.hundred(f.v);
     } catch (e) { /* a broken figure must not take the lesson with it */ }
     return '';
   },
@@ -906,7 +925,7 @@ const App = {
         Every one of these is built from the same problems as Today — a
         different way of looking at them, not extra homework.</p>
       ${Games.LIST.map(g => `<button class="card tight" style="width:100%;text-align:left;
-          cursor:pointer;border:1px solid var(--line);color:var(--text);font:inherit"
+          cursor:pointer;border:1px solid var(--rule);color:var(--ink);font:inherit"
           onclick="App.startGame('${g.id}')">
           <h2 style="display:flex;align-items:center;gap:9px">
             <span style="font-size:1.4rem">${g.glyph}</span>${this.esc(g.name)}</h2>
@@ -1158,7 +1177,7 @@ const App = {
         const done = stops.filter(st =>
           ['mastered', 'stale'].includes(Progress.state(st.s))).length;
         return `<button class="card tight" style="width:100%;text-align:left;cursor:pointer;
-            color:var(--text);font:inherit;border-left:3px solid var(--${q.tint})"
+            color:var(--ink);font:inherit;border-left:3px solid var(--${q.tint})"
             onclick="App.openQuest('${q.id}')">
             <h2 style="display:flex;align-items:center;gap:9px">
               <span style="font-size:1.3rem">${q.glyph}</span>${this.esc(q.name)}
@@ -1191,7 +1210,7 @@ const App = {
           <p class="small dim" style="display:flex;align-items:center;gap:7px">
             <span class="mono">${i + 1}</span>
             <span class="pip" style="width:8px;height:8px;border-radius:50%;
-              background:${done ? 'var(--good)' : state === 'known' ? 'var(--amber)' : 'var(--line-2)'}"></span>
+              background:${done ? 'var(--good)' : state === 'known' ? 'var(--flame)' : 'var(--rule-2)'}"></span>
             ${this.esc(STRANDS[s.s].name)}</p>
           <h3 style="margin-top:5px">${this.esc(s.name)}</h3>
           <p class="dim small" style="margin-top:4px;font-style:italic">${this.esc(st.note)}</p>
@@ -1274,7 +1293,7 @@ const App = {
         <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
           <input type="checkbox" ${p.readAloud ? 'checked' : ''}
             onchange="Progress.p.readAloud=this.checked;Progress.commit()"
-            style="width:20px;height:20px;accent-color:var(--amber)">
+            style="width:20px;height:20px;accent-color:var(--flame)">
           <span>Read each problem out loud automatically</span>
         </label>
         <p class="dim small" style="margin-top:6px">
@@ -1364,9 +1383,7 @@ const App = {
         <h2>What is your name?</h2>
         <input id="cn" maxlength="18" placeholder="Your name" value="${
           this.esc(Progress.profile ? Progress.profile.name : '')}"
-          style="width:100%;margin-top:12px;padding:14px;border-radius:12px;
-                 background:var(--ink-3);border:1px solid var(--line);
-                 color:var(--text);font:inherit;font-size:1.05rem">
+          class="namefield">
         <h2 style="margin-top:18px">Tap four pictures</h2>
         <p class="dim small" style="margin-top:4px">
           The same four, in the same order, every time — and the same ones you
